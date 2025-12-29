@@ -1,0 +1,41 @@
+We formalize multi-turn routing as a sequential interaction between an agent and an environment.
+At step $t$, the agent observes a history $h_t$ (task description, dialogue context, and the most recent environment observation).
+A router selects an LLM $a_t$ from a finite model pool $\mathcal{A}$.
+The selected model generates a text output, which is parsed into an environment action (or tool call), producing the next observation and continuing the episode until termination.
+
+\subsection{Objective: performance--cost trade-off}
+We optimize a cost-adjusted objective with a user-controlled coefficient $\lambda \ge 0$:
+\begin{equation}
+J_\lambda(\pi) = \mathbb{E}_{\pi}\left[S_{\mathrm{final}} - \lambda \sum_{t=0}^{T-1} c_t\right],
+\end{equation}
+where $S_{\mathrm{final}}$ is the terminal environment score for an episode, and $c_t$ is the per-step model invocation cost (e.g., USD estimated from token usage and model pricing).
+This formulation exposes the routing trade-off directly and enables deployment-time tuning of $\lambda$.
+
+\subsection{State and model representations}
+\paragraph{History encoding.}
+We embed the interaction history into a fixed-dimensional vector $z_x = \phi(h_t)$ using a frozen text embedding model (Qwen3-Embedding-0.6B in our current configuration).
+The history is segmented and truncated to a maximum token budget with priority given to the task description and recent turns.
+
+\paragraph{Model encoding.}
+Each candidate model $a \in \mathcal{A}$ is represented by its attributes (e.g., context length and input/output token costs) and an optional learnable residual embedding to capture model-specific effects not explained by metadata.
+
+\subsection{Learning a routing value function}
+We learn a scoring function over state--model pairs.
+Given $z_x$ and a model encoding $z_a$, a lightweight neural network outputs a scalar value.
+In practice, we use a dual-head prediction scheme:
+\begin{align}
+\widehat{s}(h_t, a) &\approx \mathbb{E}[S_{\mathrm{final}} \mid h_t, a],\\
+\widehat{r}(h_t, a) &\approx \mathbb{E}[C_{t:\mathrm{end}} \mid h_t, a],
+\end{align}
+where $C_{t:\mathrm{end}}$ is the remaining episode cost from step $t$ to termination.
+At inference time, we compute
+\begin{equation}
+Q_\lambda(h_t, a) = \widehat{s}(h_t, a) - \lambda \, \widehat{r}(h_t, a),
+\end{equation}
+and select a model using a policy (greedy by default).
+
+\subsection{Offline trajectory supervision}
+Training data is constructed from logged trajectories.
+For each step $t$ in an episode, we form a supervised target using the episode terminal score and the remaining cost.
+When trajectories are collected under stochastic routing (e.g., uniform roulette or $\beta$-mixed policies), we optionally record per-step selection propensities, enabling standard off-policy weighting techniques in future work.
+

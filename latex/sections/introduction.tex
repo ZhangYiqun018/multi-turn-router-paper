@@ -1,0 +1,18 @@
+Large language model (LLM) agents increasingly solve tasks that require dozens of interaction steps, such as iterative problem solving, tool use, and environment navigation.
+In such multi-turn settings, the choice of which LLM to call at each step has a direct impact on both task success and resource consumption (e.g., cost, latency, rate limits).
+However, most evaluation pipelines assume a fixed model, which obscures the cost--quality trade-off and limits the ability to combine complementary models.
+
+This paper studies \emph{multi-turn model routing} for agentic evaluation: at each step of an episode, a router selects one model from a pool to produce the next action (or tool call) conditioned on the interaction history.
+We focus on the practical regime where only a terminal task score is available (delayed reward), and where training data comes from logged trajectories collected under simple exploration policies.
+
+We introduce an evaluation framework and a learned router that casts routing as a contextual decision problem with a tunable cost penalty.
+The framework supports multiple action modes (e.g., shell execution, text environments, and structured multi-tool calls) and provides infrastructure for collecting trajectories with propensities for off-policy analysis.
+Our current implementation targets ScienceWorld as a representative multi-turn benchmark; extending to additional benchmarks is ongoing.
+
+Our main contributions are:
+\begin{itemize}
+  \item A modular multi-turn agent evaluation framework with an explicit routing layer decoupled from the underlying agent and environment.
+  \item A simple learned routing approach that predicts a cost-adjusted value for each model given the current history, trained from offline trajectories.
+  \item A reproducible dataset splitting and trajectory collection protocol for ScienceWorld, including in-distribution and planned out-of-distribution evaluations.
+\end{itemize}
+

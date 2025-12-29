@@ -1,0 +1,55 @@
+\subsection{Benchmark: ScienceWorld}
+We use ScienceWorld, a text-based interactive environment with multi-step tasks requiring procedural reasoning and exploration.
+Each episode is evaluated by an environment-provided terminal score $S_{\mathrm{final}}$ and is subject to a step limit and a per-episode cost budget.
+
+\subsection{Task and split protocol}
+Our current experiments use a \emph{first-try} subset of nine ScienceWorld task types, with a separate list reserved for planned out-of-distribution (OOD) evaluation.
+Within each in-distribution task type, we split task \emph{variations} into train/validation/test\_id partitions with ratios 0.6/0.2/0.2 using a fixed random seed.
+To keep collection bounded, we cap the number of variations per task type (30 in our current configuration) and drop task types with too few variations.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Setting} & \textbf{Value} \\
+    \midrule
+    Split seed & 42 \\
+    Variation split & 60\% train / 20\% val / 20\% test\_id \\
+    Max variations per task & 30 \\
+    Min variations per task & 10 \\
+    Step limit (per episode) & 50 \\
+    Cost limit (per episode) & \$2.0 \\
+    \bottomrule
+  \end{tabular}
+  \caption{ScienceWorld split and collection settings used by the current pipeline.}
+  \label{tab:split}
+\end{table}
+
+\subsection{Model pool}
+The routing framework supports an arbitrary pool of models.
+In the current configuration, the training-time model pool includes five LLM endpoints; the model metadata (context lengths and token pricing) is loaded from a central configuration file.
+For initial routing experiments, we focus on a smaller pool of three models spanning a cost--performance spectrum.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{lrrr}
+    \toprule
+    \textbf{Model ID} & \textbf{Max in} & \textbf{In \$ / 1M} & \textbf{Out \$ / 1M} \\
+    \midrule
+    openai/gpt-5 & 400{,}000 & 1.25 & 10.0 \\
+    deepseek/deepseek-v3.2 & 163{,}840 & 0.24 & 0.38 \\
+    minimax/minimax-m2 & 196{,}608 & 0.20 & 1.0 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Example model pool used in initial experiments (metadata from the model configuration).}
+  \label{tab:models}
+\end{table}
+
+\subsection{Trajectory collection (no results reported)}
+We support several collection modes:
+(\emph{i}) single-model baselines, (\emph{ii}) uniform roulette routing for exploration, and (\emph{iii}) learned routing using a trained value estimator.
+For each variation, baselines are run multiple times (3 by default) and roulette is run more times (5 by default) to increase action coverage.
+In this draft, we omit performance results and focus on documenting the models, dataset, and protocol.
+
