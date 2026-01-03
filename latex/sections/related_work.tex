@@ -1,2 +1,26 @@
-% Placeholder: Related work will be added in a later revision.
+% Related Work
 
+\paragraph{LLM Routing and Model Selection.}
+The proliferation of LLMs with diverse cost-capability profiles has motivated research on intelligent model selection. \citet{ong2024routellm} train binary classifiers to route between strong and weak models for single-turn queries, while \citet{lu2023routing} frame routing as a multi-armed bandit problem. FrugalGPT \citep{chen2023frugalgpt} cascades models from cheap to expensive until confidence thresholds are met. EmbedLLM \citep{wang2024embedllm} learns embeddings to predict model performance on specific queries. Avengers \citep{lu2024avengers} combines multiple LLMs through learned gating mechanisms. RouterDC \citep{chen2024routerdc} uses dual contrastive learning for effective router training.
+
+These approaches focus on \emph{single-turn} routing: given a query, select one model to answer it. Our work extends routing to the \emph{multi-turn} setting, where the router must reason about sequential dependencies---early model choices affect future states, requiring credit assignment across episode steps.
+
+\paragraph{LLM Agents and Tool Use.}
+LLM agents augmented with tools can perform complex multi-step tasks \citep{schick2023toolformer,qin2023toolllm}. ReAct \citep{yao2023react} interleaves reasoning and action in a single prompt. Toolformer \citep{schick2023toolformer} fine-tunes models to use tools autonomously. Recent work explores agent architectures for software engineering \citep{jimenez2024swebench,yang2024sweagent}, web browsing \citep{zhou2024webarena}, and scientific reasoning \citep{wang2022scienceworld}.
+
+Most agent frameworks assume a fixed underlying model. Our work introduces a routing layer that can dynamically switch between models, treating the model choice as an additional decision at each step. This is orthogonal to agent architecture and can be applied to any multi-turn agent system.
+
+\paragraph{Cost-Aware LLM Inference.}
+Reducing LLM inference costs has received significant attention. Speculative decoding \citep{leviathan2023speculative} uses draft models to accelerate generation. Model cascading \citep{dohan2022cascade} and FrugalGPT \citep{chen2023frugalgpt} invoke expensive models only when needed. Mixture-of-Experts architectures \citep{shazeer2017moe,fedus2022switch} activate subsets of parameters per token.
+
+Our approach operates at a different granularity: rather than optimizing within a single generation, we optimize model selection across \emph{multiple turns} of agent interaction. The cost savings compound over episodes with dozens of LLM calls.
+
+\paragraph{Offline Reinforcement Learning.}
+Our learning approach draws from offline RL \citep{levine2020offline,kumar2020cql}, which learns policies from logged data without online interaction. Conservative Q-Learning \citep{kumar2020cql} addresses overestimation in offline settings. Implicit Q-Learning \citep{kostrikov2021iql} avoids explicit policy constraints.
+
+We adopt a simpler approach suited to our setting: direct regression on Monte Carlo returns from the data distribution. While conservative methods could further improve robustness, we find that sufficient data coverage under the roulette collection policy enables effective learning.
+
+\paragraph{Contextual Bandits for Model Selection.}
+Contextual bandits \citep{li2010linucb,agarwal2014contextual} provide a framework for online model selection with feedback. Upper Confidence Bound (UCB) and Thompson Sampling offer principled exploration. Our setting differs in that (1) we have delayed, terminal rewards rather than immediate feedback, and (2) we operate in an episodic MDP rather than a stateless bandit.
+
+Our Q-function learning can be viewed as converting the MDP to an implicit contextual bandit by predicting future returns, with the history encoding serving as the context. At deployment, we use greedy selection or $\epsilon$-greedy for exploration.

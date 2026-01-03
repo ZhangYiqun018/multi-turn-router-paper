@@ -1,0 +1,269 @@
+% Appendix
+
+\section{Dataset and Split Details}
+\label{app:data}
+
+\subsection{ScienceWorld Task Types}
+
+Table~\ref{tab:sw_tasks} lists the ScienceWorld task types used for training and out-of-distribution evaluation.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Split} & \textbf{Task Types} \\
+\midrule
+\multirow{4}{*}{Train (13)} & boil, melt, chemistry-mix, find-animal, \\
+& find-plant, grow-plant, identify-life-stages-1, \\
+& lifespan-longest-lived, inclined-plane-angle, \\
+& measure-melting-point, power-component, \\
+& test-conductivity, mendelian-genetics \\
+\midrule
+\multirow{4}{*}{OOD Test (12)} & freeze, change-state-of-matter, \\
+& chemistry-mix-paint, find-non-living, \\
+& grow-fruit, identify-life-stages-2, \\
+& lifespan-shortest, inclined-plane-friction, \\
+& use-thermometer, power-renewable, \\
+& test-conductivity-unknown, genetics-unknown \\
+\bottomrule
+\end{tabular}
+\caption{ScienceWorld task type splits.}
+\label{tab:sw_tasks}
+\end{table}
+
+For each task type, we sample up to 30 variations (to bound collection time). Variations are split 60\%/20\%/20\% into train/validation/test using a fixed random seed (42).
+
+\subsection{HLE Subject Categories}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lc}
+\toprule
+\textbf{Category} & \textbf{N (Test)} \\
+\midrule
+\multicolumn{2}{c}{\textit{In-Distribution (Training)}} \\
+\midrule
+Math & 200 \\
+Physics & 46 \\
+Chemistry & 23 \\
+Biology/Medicine & 37 \\
+Engineering & 16 \\
+Computer Science/AI & 37 \\
+\midrule
+\multicolumn{2}{c}{\textit{Out-of-Distribution}} \\
+\midrule
+Humanities/Social Science & 193 \\
+Other & 176 \\
+\bottomrule
+\end{tabular}
+\caption{HLE test set distribution by category.}
+\label{tab:hle_categories}
+\end{table}
+
+\section{Detailed Per-Task Results}
+\label{app:pertask}
+
+Table~\ref{tab:sw_pertask} shows per-task results on ScienceWorld for selected methods.
+
+\begin{table*}[h]
+\centering
+\small
+\begin{tabular}{l|cc|cc|cc|cc}
+\toprule
+& \multicolumn{2}{c|}{\textbf{GPT-5}} & \multicolumn{2}{c|}{\textbf{Random}} & \multicolumn{2}{c|}{\textbf{LearnedRouter}} & \multicolumn{2}{c}{\textbf{LearnedRouter+}} \\
+\textbf{Task} & SR\% & Cost & SR\% & Cost & SR\% & Cost & SR\% & Cost \\
+\midrule
+boil & 16.7 & \$0.28 & 16.7 & \$0.08 & 33.3 & \$0.21 & 16.7 & \$0.22 \\
+chemistry-mix & 0.0 & \$0.32 & 0.0 & \$0.11 & 0.0 & \$0.01 & 0.0 & \$0.04 \\
+find-animal & 16.7 & \$0.22 & 0.0 & \$0.07 & 16.7 & \$0.14 & 33.3 & \$0.15 \\
+find-plant & 100.0 & \$0.04 & 83.3 & \$0.02 & 50.0 & \$0.10 & 83.3 & \$0.04 \\
+grow-plant & 0.0 & \$0.36 & 0.0 & \$0.10 & 0.0 & \$0.14 & 0.0 & \$0.22 \\
+identify-life-stages & 0.0 & \$0.25 & 0.0 & \$0.06 & 0.0 & \$0.26 & 0.0 & \$0.03 \\
+inclined-plane & 50.0 & \$0.23 & 66.7 & \$0.06 & 50.0 & \$0.21 & 66.7 & \$0.04 \\
+lifespan-longest & 66.7 & \$0.03 & 50.0 & \$0.01 & 83.3 & \$0.00 & 83.3 & \$0.00 \\
+melting-point & 100.0 & \$0.04 & 100.0 & \$0.02 & 100.0 & \$0.02 & 83.3 & \$0.03 \\
+melt & 33.3 & \$0.27 & 33.3 & \$0.05 & 0.0 & \$0.16 & 16.7 & \$0.02 \\
+mendelian-genetics & 100.0 & \$0.02 & 83.3 & \$0.05 & 100.0 & \$0.02 & 100.0 & \$0.02 \\
+power-component & 0.0 & \$0.45 & 33.3 & \$0.05 & 0.0 & \$0.37 & 0.0 & \$0.17 \\
+test-conductivity & 100.0 & \$0.04 & 83.3 & \$0.03 & 100.0 & \$0.02 & 100.0 & \$0.04 \\
+\midrule
+\textbf{Overall} & 47.3 & \$0.19 & 43.8 & \$0.05 & 43.2 & \$0.12 & 47.3 & \$0.08 \\
+\bottomrule
+\end{tabular}
+\caption{Per-task ScienceWorld results.}
+\label{tab:sw_pertask}
+\end{table*}
+
+\section{Error Analysis}
+\label{app:errors}
+
+\subsection{Error Type Distribution}
+
+Table~\ref{tab:error_types} shows the distribution of errors across models on HLE.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Error Type} & \textbf{Count} & \textbf{\%} \\
+\midrule
+format\_error & 66,789 & 88.5\% \\
+search\_no\_results & 3,944 & 5.2\% \\
+tool\_invalid\_args & 2,046 & 2.7\% \\
+python\_name\_error & 1,050 & 1.4\% \\
+browse\_access\_denied & 625 & 0.8\% \\
+Other & 1,036 & 1.4\% \\
+\bottomrule
+\end{tabular}
+\caption{Error type distribution on HLE.}
+\label{tab:error_types}
+\end{table}
+
+Format errors dominate (88.5\%), indicating that models frequently fail to produce correctly formatted tool calls. This motivates the router's strategy of escalating to stronger models when format errors occur.
+
+\subsection{Error Rates by Model}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Model} & \textbf{Error Rate} \\
+\midrule
+Grok-4.1-Fast & 41.1\% \\
+DeepSeek-V3.2 & 32.8\% \\
+Kimi-K2 & 42.9\% \\
+GPT-5 & 51.8\% \\
+Gemini-Flash & 57.6\% \\
+GPT-OSS-120B & 81.6\% \\
+MiniMax-M2 & 88.5\% \\
+\bottomrule
+\end{tabular}
+\caption{Per-turn error rates on HLE.}
+\label{tab:model_errors}
+\end{table}
+
+Interestingly, GPT-5's error rate (51.8\%) is higher than some cheaper models on HLE. This is because GPT-5 takes fewer steps (7.0 vs 26.0 for DeepSeek), so each step is more consequential. MiniMax-M2's high error rate (88.5\%) explains its poor standalone performance despite low cost.
+
+\section{Model Embedding Visualization}
+\label{app:embeddings}
+
+Figure~\ref{fig:model_embeddings} shows UMAP visualization of learned model embeddings $z_a$.
+
+\begin{figure}[h]
+\centering
+\fbox{\parbox{0.9\columnwidth}{
+\centering
+\textit{[Model Embedding UMAP Visualization]}\\[2mm]
+\small
+The learned embeddings cluster models by capability tier:\\
+- Premium cluster: GPT-5\\
+- Mid-tier cluster: DeepSeek, Kimi\\
+- Economy cluster: GPT-OSS, Gemini, MiniMax
+}}
+\caption{UMAP projection of learned model embeddings. Models cluster by capability/cost tier, with GPT-5 isolated as the premium option.}
+\label{fig:model_embeddings}
+\end{figure}
+
+The embedding space learns to separate models by capability tier rather than provider, suggesting the residual embeddings capture performance characteristics beyond the raw attribute features.
+
+\section{Training Dynamics}
+\label{app:training}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Score $R^2$} & \textbf{Cost $R^2$} \\
+\midrule
+GPT-5 & 0.792 & 0.645 \\
+DeepSeek-V3.2 & 0.731 & 0.618 \\
+MiniMax-M2 & 0.718 & 0.587 \\
+Kimi-K2 & 0.744 & 0.592 \\
+Gemini-Flash & 0.689 & 0.551 \\
+GPT-OSS-120B & 0.755 & 0.708 \\
+\midrule
+\textbf{Average} & 0.738 & 0.617 \\
+\bottomrule
+\end{tabular}
+\caption{Per-model prediction $R^2$ on validation set.}
+\label{tab:r2_scores}
+\end{table}
+
+The Q-function achieves strong predictive performance, with score prediction $R^2$ ranging from 0.689 (Gemini) to 0.792 (GPT-5). Cost prediction is slightly lower, likely due to higher variance in remaining cost depending on success/failure paths.
+
+\section{Hyperparameter Sensitivity}
+\label{app:hyperparams}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{l|cc}
+\toprule
+\textbf{Configuration} & \textbf{SW SR\%} & \textbf{SW Cost} \\
+\midrule
+$\lambda = 0$ & 47.3 & \$0.078 \\
+$\lambda = 0.25$ & 36.0 & \$0.039 \\
+$\lambda = 0.5$ & 31.1 & \$0.028 \\
+$\lambda = 1.0$ & 23.0 & \$0.012 \\
+\midrule
+Hidden [128, 128] & 43.2 & \$0.082 \\
+Hidden [256, 256] & 47.3 & \$0.078 \\
+Hidden [512, 512] & 44.6 & \$0.085 \\
+\midrule
+Dropout 0.0 & 45.9 & \$0.081 \\
+Dropout 0.1 & 47.3 & \$0.078 \\
+Dropout 0.2 & 43.2 & \$0.079 \\
+\bottomrule
+\end{tabular}
+\caption{Hyperparameter sensitivity analysis.}
+\label{tab:hyperparams}
+\end{table}
+
+The $\lambda$ parameter provides smooth control over the cost-quality trade-off. Network architecture is relatively robust, with [256, 256] slightly outperforming smaller/larger variants.
+
+\section{Sankey Diagram: Error Recovery Flow}
+\label{app:sankey}
+
+Figure~\ref{fig:sankey_description} describes the error recovery flow visualization.
+
+\begin{figure}[h]
+\centering
+\fbox{\parbox{0.9\columnwidth}{
+\centering
+\textit{[Error Recovery Sankey Diagram]}\\[2mm]
+\small
+Flow from error-triggering model $\rightarrow$ recovery model $\rightarrow$ outcome:\\[1mm]
+\textbf{ScienceWorld:}\\
+- 16 error switches, 15 recover successfully (93.8\%)\\
+- GPT-OSS $\rightarrow$ GPT-5: 100\% recovery\\
+- MiniMax $\rightarrow$ GPT-5: 100\% recovery\\[2mm]
+\textbf{HLE:}\\
+- 250 error switches, 87 recover (34.8\%)\\
+- Format errors most common trigger (233)\\
+- Escalation to GPT-5 has 31.9\% success rate
+}}
+\caption{Description of error recovery flow. On ScienceWorld, error escalation to premium models has near-perfect recovery; on HLE, recovery is more challenging due to task difficulty.}
+\label{fig:sankey_description}
+\end{figure}
+
+\section{Reproducibility}
+\label{app:reproduce}
+
+\paragraph{Code and Data.}
+All code, trained models, and trajectory data will be released at \url{[anonymized for review]}. The framework is implemented in Python 3.10 with PyTorch 2.0.
+
+\paragraph{Compute Requirements.}
+\begin{itemize}
+\item Trajectory collection: 6$\times$ A100 GPUs, approximately 48 hours
+\item Embedding precomputation: 1$\times$ A100, approximately 4 hours
+\item Router training: 1$\times$ A100, approximately 2 hours
+\item Evaluation: 2$\times$ A100, approximately 8 hours per benchmark
+\end{itemize}
+
+\paragraph{API Costs.}
+Total API cost for experiments: approximately \$3,500 USD across data collection and evaluation.

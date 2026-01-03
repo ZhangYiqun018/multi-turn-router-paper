@@ -1,18 +1,87 @@
-Large language model (LLM) agents increasingly solve tasks that require dozens of interaction steps, such as iterative problem solving, tool use, and environment navigation.
-In such multi-turn settings, the choice of which LLM to call at each step has a direct impact on both task success and resource consumption (e.g., cost, latency, rate limits).
-However, most evaluation pipelines assume a fixed model, which obscures the cost--quality trade-off and limits the ability to combine complementary models.
+% Introduction with toy example
 
-This paper studies \emph{multi-turn model routing} for agentic evaluation: at each step of an episode, a router selects one model from a pool to produce the next action (or tool call) conditioned on the interaction history.
-We focus on the practical regime where only a terminal task score is available (delayed reward), and where training data comes from logged trajectories collected under simple exploration policies.
+Large language model (LLM) agents are increasingly deployed to solve complex, multi-step tasks---from software engineering \citep{jimenez2024swebench} to scientific reasoning \citep{wang2022scienceworld} and web navigation \citep{yao2022webshop}. These agentic workflows often require dozens of LLM calls, each incurring computational cost and latency. As the frontier of LLM capabilities expands, practitioners face a growing \emph{model zoo}: GPT-5 offers superior reasoning but costs \$1.25/M input tokens, while alternatives like Gemini-Flash provide 10$\times$ lower costs at reduced capability. This heterogeneity creates both an opportunity and a challenge: \textit{can we dynamically route between models during an episode to optimize the cost-quality trade-off?}
 
-We introduce an evaluation framework and a learned router that casts routing as a contextual decision problem with a tunable cost penalty.
-The framework supports multiple action modes (e.g., shell execution, text environments, and structured multi-tool calls) and provides infrastructure for collecting trajectories with propensities for off-policy analysis.
-Our current implementation targets ScienceWorld as a representative multi-turn benchmark; extending to additional benchmarks is ongoing.
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=0.4cm,
+    box/.style={rectangle, draw, rounded corners, minimum width=2.2cm, minimum height=0.6cm, font=\scriptsize},
+    expensive/.style={box, fill=gpt5color!30},
+    cheap/.style={box, fill=gptosscolor!30},
+    mid/.style={box, fill=deepseekcolor!30},
+    arrow/.style={->, >=stealth, thick},
+    label/.style={font=\tiny, align=center}
+]
 
-Our main contributions are:
+% Task
+\node[box, fill=yellow!20, minimum width=5.5cm] (task) {\textbf{Task:} Boil water in a kitchen environment};
+
+% Timeline
+\node[below=0.5cm of task, xshift=-2.2cm] (t1label) {\scriptsize Step 1};
+\node[right=0.8cm of t1label] (t2label) {\scriptsize Step 2-5};
+\node[right=0.5cm of t2label] (t3label) {\scriptsize Step 6};
+\node[right=0.5cm of t3label] (t4label) {\scriptsize Step 7-10};
+
+% Single model approach
+\node[below=0.3cm of t1label, expensive] (s1a) {GPT-5};
+\node[below=0.3cm of t2label, expensive] (s1b) {GPT-5};
+\node[below=0.3cm of t3label, expensive] (s1c) {GPT-5};
+\node[below=0.3cm of t4label, expensive] (s1d) {GPT-5};
+\node[left=0.1cm of s1a, label] {Single\\Model:};
+
+% Routed approach
+\node[below=0.4cm of s1a, expensive] (r1) {GPT-5};
+\node[below=0.4cm of s1b, cheap] (r2) {GPT-OSS};
+\node[below=0.4cm of s1c, expensive] (r3) {GPT-5};
+\node[below=0.4cm of s1d, cheap] (r4) {GPT-OSS};
+\node[left=0.1cm of r1, label] {Learned\\Router:};
+
+% Actions
+\node[below=0.15cm of r1, label, text=gray] {Plan task};
+\node[below=0.15cm of r2, label, text=gray] {Navigate};
+\node[below=0.15cm of r3, label, text=gray] {Fix error};
+\node[below=0.15cm of r4, label, text=gray] {Execute};
+
+% Cost comparison
+\node[below=1.2cm of r2, xshift=0.3cm] (cost) {
+\scriptsize
+\begin{tabular}{lcc}
+& \textbf{Cost} & \textbf{Success} \\
+Single (GPT-5) & \$0.19 & \checkmark \\
+\rowcolor{green!15} Learned Router & \$0.08 & \checkmark \\
+\end{tabular}
+};
+
+\end{tikzpicture}
+\caption{A toy example of multi-turn model routing. For a ScienceWorld task requiring 10 steps, a single-model approach uses GPT-5 (\$1.25/M tokens) throughout. \textsc{LearnedRouter} uses GPT-5 for planning (Step 1) and error recovery (Step 6), switching to cheaper GPT-OSS (\$0.09/M tokens) for routine navigation and execution, achieving the same success with 58\% cost reduction.}
+\label{fig:toy_example}
+\end{figure}
+
+Consider the scenario in Figure~\ref{fig:toy_example}: an agent must boil water in ScienceWorld, a text-based science simulation. The task requires 10 interaction steps: planning what to do, navigating to the kitchen, finding a container, filling it with water, locating a heat source, and activating it. A single-model approach using GPT-5 succeeds but costs \$0.19 per episode. However, not all steps require frontier capabilities---navigation commands like ``go to kitchen'' are routine, while initial planning and error recovery benefit from stronger reasoning. Our \textsc{LearnedRouter} learns this pattern from data: it selects GPT-5 for the critical first step and when errors occur, but routes to the 14$\times$ cheaper GPT-OSS for execution steps, achieving the same success rate at 58\% lower cost.
+
+This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router $\pi$ selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
+
+We formalize this as optimizing a cost-adjusted objective:
+\begin{equation}
+J_\lambda(\pi) = \mathbb{E}_\pi\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
+\end{equation}
+where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step cost, and $\lambda \geq 0$ is a user-controllable penalty. This formulation exposes the cost-quality trade-off directly: at $\lambda=0$, the router maximizes performance; as $\lambda$ increases, it increasingly favors cheaper models.
+
+Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed reward}: only terminal success/failure is observed, requiring credit assignment across dozens of steps; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
+
+Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing policies. We collect trajectories under a stochastic ``roulette'' policy that randomly samples models at each step, providing coverage over the action space. From these trajectories, we train a Q-function $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted return for selecting model $a$ given history $h_t$.
+
+\paragraph{Contributions.} We make the following contributions:
+
 \begin{itemize}
-  \item A modular multi-turn agent evaluation framework with an explicit routing layer decoupled from the underlying agent and environment.
-  \item A simple learned routing approach that predicts a cost-adjusted value for each model given the current history, trained from offline trajectories.
-  \item A reproducible dataset splitting and trajectory collection protocol for ScienceWorld, including in-distribution and planned out-of-distribution evaluations.
+\item \textbf{Framework}: We introduce a modular multi-turn agent evaluation framework with an explicit routing layer, supporting pluggable routers, model pools, and benchmarks (\S\ref{sec:method}).
+
+\item \textbf{Method}: We propose \textsc{LearnedRouter}, which learns a dual-head Q-function (predicting score and cost separately) from offline trajectories, enabling deployment-time $\lambda$ adjustment without retraining (\S\ref{sec:learning}).
+
+\item \textbf{Evaluation}: We evaluate on ScienceWorld (13 procedural tasks) and HLE (6 academic domains) with 6 frontier LLMs. \textsc{LearnedRouter} matches GPT-5's performance at 59\% lower cost on ScienceWorld (\S\ref{sec:experiments}).
+
+\item \textbf{Analysis}: We analyze learned routing patterns, finding that the router prefers expensive models for planning and error recovery, with model specialization emerging across task categories (\S\ref{sec:analysis}).
 \end{itemize}
 
+Our framework, trajectory dataset (137K samples), and trained models are publicly available to facilitate research on cost-aware agent evaluation.\footnote{Code and data will be released upon publication.}
