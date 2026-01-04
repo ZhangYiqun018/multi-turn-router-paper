@@ -43,7 +43,7 @@ On HLE, LLM Router achieves 24.0\% accuracy, close to GPT-5 (25.1\%), while Open
 
 \input{tables/ood_results}
 
-Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld task types and held-out HLE categories. We include OpenRouter as a strong practical baseline that is advantaged by a larger candidate pool (Appendix~\ref{app:openrouter}).
+Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld task types and held-out HLE categories. We include OpenRouter as a strong practical baseline that is advantaged by a larger candidate pool (Appendix~\ref{app:openrouter}). For readability, we report raw OOD metrics; an alternative presentation (common in robustness reporting) is to additionally include generalization gaps, e.g., $\Delta$Score = Score$_{\text{OOD}}$ $-$ Score$_{\text{ID}}$ and $\Delta$Acc = Acc$_{\text{OOD}}$ $-$ Acc$_{\text{ID}}$, to directly quantify degradation under distribution shift.
 
 \subsection{Analysis}
 \label{sec:analysis}
