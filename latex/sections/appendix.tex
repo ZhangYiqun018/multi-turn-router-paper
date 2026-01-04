@@ -32,28 +32,6 @@ Format errors dominate (88.5\%), indicating that models frequently fail to produ
 
 Interestingly, GPT-5's error rate (51.8\%) is higher than some cheaper models on HLE. This is because GPT-5 takes fewer steps (7.0 vs 26.0 for DeepSeek), so each step is more consequential. MiniMax-M2's high error rate (88.5\%) explains its poor standalone performance despite low cost.
 
-\section{Model Embedding Visualization}
-\label{app:embeddings}
-
-Figure~\ref{fig:model_embeddings} shows UMAP visualization of learned model embeddings $z_a$.
-
-\begin{figure}[h]
-\centering
-\fbox{\parbox{0.9\columnwidth}{
-\centering
-\textit{[Model Embedding UMAP Visualization]}\\[2mm]
-\small
-The learned embeddings cluster models by capability tier:\\
-- Premium cluster: GPT-5\\
-- Mid-tier cluster: DeepSeek, Kimi\\
-- Economy cluster: GPT-OSS, Gemini, MiniMax
-}}
-\caption{UMAP projection of learned model embeddings. Models cluster by capability/cost tier, with GPT-5 isolated as the premium option.}
-\label{fig:model_embeddings}
-\end{figure}
-
-The embedding space learns to separate models by capability tier rather than provider, suggesting the residual embeddings capture performance characteristics beyond the raw attribute features.
-
 \section{Training Dynamics}
 \label{app:training}
 

@@ -49,6 +49,17 @@ Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld tas
 
 \begin{figure}[t]
 \centering
+\includegraphics[width=0.80\columnwidth]{figures/model_embeddings.png}
+\caption{t-SNE visualization of learned model embeddings from the model encoder. The embeddings separate models by identity and form a clear cost-tier structure, with low-cost models (e.g., GPT-OSS, Gemini) distinct from higher-cost frontier models (e.g., GPT-5).}
+\label{fig:model_embeddings}
+\end{figure}
+
+\paragraph{Learned model embeddings.}
+Figure~\ref{fig:model_embeddings} visualizes the learned model embeddings after training.
+The encoder learns to distinguish the candidate models and organizes them by cost tier, suggesting it captures meaningful capability--cost structure beyond raw attributes.
+
+\begin{figure}[t]
+\centering
 \begin{tikzpicture}[scale=0.85]
 \begin{axis}[
     ybar stacked,
