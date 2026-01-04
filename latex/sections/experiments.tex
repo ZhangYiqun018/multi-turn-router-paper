@@ -17,6 +17,8 @@ We evaluate with 6 frontier LLMs spanning a 100$\times$ cost range:
 
 \input{tables/model_pool}
 
+To avoid ambiguity, throughout the paper ``Gemini-2.5-Flash-Lite'' refers to the specific model \texttt{google/gemini-2.5-flash-lite} (sometimes loosely called ``Gemini Flash'' in provider documentation).
+
 \paragraph{Training Details.}
 We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64. History embeddings are precomputed using vLLM for efficiency. Training takes approximately 2 hours on a single A100 GPU.
 
@@ -97,7 +99,7 @@ We analyze model switches triggered by errors (format errors, invalid actions). 
 \input{tables/specialization}
 
 \paragraph{Task-specific model specialization.}
-Table~\ref{tab:specialization} reveals emergent specialization: Gemini-Flash is used 7$\times$ more for chemistry-mix tasks (perhaps benefiting from its large context), while GPT-5 dominates boiling tasks (3$\times$). GPT-OSS-120B specializes in identification tasks (lifespan, melt). This specialization emerges purely from learning, without explicit task-model assignments.
+Table~\ref{tab:specialization} reveals emergent specialization: Gemini-2.5-Flash-Lite is used 7$\times$ more for chemistry-mix tasks (perhaps benefiting from its large context), while GPT-5 dominates boiling tasks (3$\times$). GPT-OSS-120B specializes in identification tasks (lifespan, melt). This specialization emerges purely from learning, without explicit task-model assignments.
 
 \paragraph{Q-value dynamics during switching.}
 When the router switches models, Q-values consistently improve: the average Q-delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive Q-delta, indicating the router confidently believes switching improves expected outcomes.
