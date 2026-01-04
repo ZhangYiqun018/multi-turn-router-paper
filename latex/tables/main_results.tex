@@ -33,11 +33,22 @@ OpenRouter & -26.4 & \$3.03 & 38.2 & 18.3 & \$138.46 & 5.6 \\
 \midrule
 \rowcolor{green!10}
 \method (ours) & \textbf{53.8} & \$5.74 & 29.1 & \textbf{26.0} & \$34.97 & 11.9 \\
-\addlinespace[0.15em]
-\rowcolor{green!5}
-\multicolumn{7}{l}{\footnotesize\textbf{$\Delta$ vs GPT-5:} SW +5.4 score, save \$8.17 (58.7\%); HLE +0.9 acc, save \$26.80 (43.4\%).} \\
-\rowcolor{green!5}
-\multicolumn{7}{l}{\footnotesize\textbf{$\Delta$ vs Router-R1:} HLE +1.8 acc, save \$16.97 (32.7\%).} \\
+\rowcolor{green!6}
+\multicolumn{1}{l}{\scriptsize\textit{\quad $\Delta$ vs GPT-5}} &
+{\scriptsize\textbf{+5.4}} &
+{\scriptsize\textbf{-\$8.17} (58.7\%)} &
+{\scriptsize\textcolor{black!60}{--}} &
+{\scriptsize\textbf{+0.9}} &
+{\scriptsize\textbf{-\$26.80} (43.4\%)} &
+{\scriptsize\textcolor{black!60}{--}} \\
+\rowcolor{green!6}
+\multicolumn{1}{l}{\scriptsize\textit{\quad $\Delta$ vs Router-R1}} &
+{\scriptsize\textcolor{black!60}{n/a}} &
+{\scriptsize\textcolor{black!60}{n/a}} &
+{\scriptsize\textcolor{black!60}{--}} &
+{\scriptsize\textbf{+1.8}} &
+{\scriptsize\textbf{-\$16.97} (32.7\%)} &
+{\scriptsize\textcolor{black!60}{--}} \\
 \bottomrule
 \end{tabular}
 \caption{Main results on ScienceWorld and HLE test sets. Avg Score/Avg Turns are per-episode averages (ScienceWorld score in 0--100; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. The $\Delta$ lines summarize \method's score gains and cost savings relative to GPT-5 and Router-R1. ``--'' indicates results omitted or not available.}
