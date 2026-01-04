@@ -1,0 +1,36 @@
+\begin{lstlisting}[style=prompt]
+<task_description>
+{{task_description}}
+</task_description>
+
+<initial_observation>
+{{initial_observation}}
+</initial_observation>
+
+<instructions>
+Complete the science experiment described above. You are interacting with a simulated environment.
+Issue commands one at a time and observe the results.
+
+**Tip:** Use query commands like `?navigation` or `?object` to explore available actions without consuming a turn.
+
+**Strategy hints:**
+- First explore: use "open door to [room]" then "go to [room]" to navigate
+- Look around each room to find objects you need
+- Pick up objects with "pick up [object]"
+- For heating: find a stove, turn it on with "activate [stove]", place container on it
+- For cooling: use a freezer or refrigerator
+- Use "focus on [object]" to examine substances
+
+To complete the task, perform the necessary actions described in the task description.
+When you believe the task is complete, issue the command:
+
+```text
+task completed
+```
+
+Remember:
+- Think step by step about what actions are needed
+- Explore your environment to find needed objects
+- Some actions may require prerequisites (e.g., picking up an object before using it)
+</instructions>
+\end{lstlisting}

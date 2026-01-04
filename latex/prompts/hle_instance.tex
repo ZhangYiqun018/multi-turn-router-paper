@@ -1,0 +1,14 @@
+\begin{lstlisting}[style=prompt]
+## HLE Question
+{% if subject %}
+**Subject**: {{ subject }}
+{% endif %}
+
+{{ question | default(task) }}
+
+---
+
+Solve this step by step. Use tools to research and verify.
+Submit your final answer using the `answer` tool:
+<tool_call>{"name": "answer", "arguments": {"answer": "your final answer"}}</tool_call>
+\end{lstlisting}

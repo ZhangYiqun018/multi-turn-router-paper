@@ -61,6 +61,81 @@ The embedding space learns to separate models by capability tier rather than pro
 
 The Q-function achieves strong predictive performance, with score prediction $R^2$ ranging from 0.689 (Gemini) to 0.792 (GPT-5). Cost prediction is slightly lower, likely due to higher variance in remaining cost depending on success/failure paths.
 
+\section{Prompts and Tool Schemas}
+\label{app:prompts}
+
+\subsection{ScienceWorld Agent Prompt}
+\label{app:prompts:sw}
+
+We report the ScienceWorld agent prompts used in our evaluation setup.
+For brevity, we omit the format-error correction prompt and only list the system and instance templates.
+
+\paragraph{System prompt.}
+\input{prompts/scienceworld_system}
+
+\paragraph{Instance prompt.}
+\input{prompts/scienceworld_instance}
+
+\subsection{HLE Agent Prompt}
+\label{app:prompts:hle}
+
+We report the HLE agent prompts used in our evaluation setup.
+For brevity, we omit the format-error correction prompt and only list the system and instance templates.
+The system prompt includes tool schemas via a template variable; we list each tool schema explicitly in Appendix~\ref{app:tool_schemas}.
+
+\paragraph{System prompt.}
+\input{prompts/hle_system}
+
+\paragraph{Instance prompt.}
+\input{prompts/hle_instance}
+
+\subsection{Tool Schemas}
+\label{app:tool_schemas}
+
+The HLE agent injects XML tool schemas into the system prompt (see Appendix~\ref{app:prompts:hle}).
+We list each tool schema (as rendered to XML) below.
+
+\paragraph{\texttt{search}.}
+\input{prompts/tool_schema_search_xml}
+
+\paragraph{\texttt{browse}.}
+\input{prompts/tool_schema_browse_xml}
+
+\paragraph{\texttt{python}.}
+\input{prompts/tool_schema_python_xml}
+
+\paragraph{\texttt{answer}.}
+\input{prompts/tool_schema_answer_xml}
+
+\subsection{Routing Policy Prompt for LLM Router / Router-R1}
+\label{app:prompts:routing}
+
+We report the single-turn routing prompt used by the LLM Router baseline and by Router-R1.
+Both use the same prompt template; they differ only in which policy LLM is used to produce the \texttt{<select>} decision.
+
+\paragraph{System prompt.}
+\input{prompts/llmrouter_system}
+
+\paragraph{Model descriptors.}
+The routing prompt instantiates \texttt{\{model\_list\}} using per-model descriptors; we list the descriptors used in our experiments below.
+\input{prompts/llmrouter_model_descriptors}
+
+\subsection{Browse Extractor Prompt}
+\label{app:prompts:browse}
+
+The HLE \texttt{browse} tool can optionally use an LLM to extract and summarize relevant evidence from retrieved webpages.
+We report the extractor prompt used for this LLM-based summarization.
+
+\input{prompts/browse_extractor_prompt}
+
+\subsection{HLE Judge Prompt}
+\label{app:prompts:judge}
+
+HLE scoring uses an LLM-as-a-judge component aligned with the official HLE evaluation.
+We report the judge prompt used to compare a model response against the provided reference answer.
+
+\input{prompts/hle_judge_prompt}
+
 \section{OpenRouter Baseline Details}
 \label{app:openrouter}
 

@@ -38,7 +38,10 @@
 \usepackage{algorithmic}
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usepackage{listings}
+\usepackage[most]{tcolorbox} % 必须引入 most 以支持增强功能
 \usepackage{enumitem}
+
 \setlist[itemize]{nolistsep,noitemsep,leftmargin=*}
 \pgfplotsset{compat=1.16}
 \usetikzlibrary{shapes,arrows,positioning,fit,backgrounds}
@@ -50,6 +53,28 @@
 \definecolor{kimicolor}{RGB}{186,85,211}
 \definecolor{geminicolor}{RGB}{255,99,71}
 \definecolor{gptosscolor}{RGB}{128,128,128}
+
+\newtcolorbox{paperbox}[2][]{%
+  enhanced,
+  colback=white,
+  colframe=black,
+  fonttitle=\bfseries,
+  before=\refstepcounter{table},
+  title={#2},
+  #1
+}
+
+\lstdefinestyle{prompt}{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  rulecolor=\color{black!40},
+  framerule=0.4pt,
+  xleftmargin=0.5em,
+  xrightmargin=0.5em
+}
 
 \newcommand{\method}{\textsc{VOLT}}
 \newcommand{\methodplus}{\textsc{VOLT+}}
