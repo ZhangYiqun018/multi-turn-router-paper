@@ -3,7 +3,7 @@
 \small
 \begin{tabular}{lccc ccc}
 \toprule
-& \multicolumn{3}{c}{\textbf{ScienceWorld (OOD Test)}} & \multicolumn{3}{c}{\textbf{HLE (OOD Test)}} \\
+& \multicolumn{3}{c}{\textbf{ScienceWorld (Held-out Task Types)}} & \multicolumn{3}{c}{\textbf{HLE (Held-out Subjects)}} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 \textbf{Method} & Avg Score$\uparrow$ & Total Cost (\$)$\downarrow$ & Avg Turns & Acc. (\%)$\uparrow$ & Total Cost (\$)$\downarrow$ & Avg Turns \\
 \midrule
@@ -35,6 +35,6 @@ OpenRouter & -26.9 & \$15.45 & 38.1 & 34.0 & \$20.91 & 7.2 \\
 \methodplus ($\lambda$=0) & -- & -- & -- & -- & -- & -- \\
 \bottomrule
 \end{tabular}
-\caption{Out-of-distribution results on ScienceWorld and HLE. Avg Score/Avg Turns are per-episode averages (ScienceWorld score in 0--100; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. ``--'' indicates results omitted or not available.}
+\caption{OOD results on held-out ScienceWorld task types and held-out HLE subject categories (disjoint from training and ID test). Avg Score/Avg Turns are per-episode averages (ScienceWorld score in 0--100; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. ``--'' indicates results omitted or not available.}
 \label{tab:ood_results}
 \end{table*}

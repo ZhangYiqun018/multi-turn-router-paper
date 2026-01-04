@@ -5,7 +5,8 @@ We evaluate \method on two challenging multi-turn benchmarks and analyze the lea
 \subsection{Experimental Setup}
 
 \paragraph{Benchmarks.}
-We evaluate on two diverse benchmarks:
+We evaluate on two diverse benchmarks with both in-distribution (ID) and out-of-distribution (OOD) splits.
+Because agentic systems are often deployed in open-ended settings, robustness to distribution shift is a primary concern; accordingly, we construct OOD evaluations that are \emph{semantically} disjoint from training and ID test (no overlap), rather than relying on random re-sampling.
 
 \textbf{ScienceWorld} \citep{wang2022scienceworld} is a text-based interactive environment requiring procedural scientific reasoning. Tasks include boiling water, growing plants, testing conductivity, and Mendelian genetics experiments. The environment provides a terminal score $S_{\text{final}} \in [0, 100]$ based on task completion. We use 13 task types for training/validation with a 60\%/20\%/20\% variation split, reserving 12 task types for out-of-distribution testing. Episodes are limited to 50 steps and \$2.0 cost.
 
@@ -47,9 +48,9 @@ Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld tas
 \subsection{Analysis}
 \label{sec:analysis}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.80\columnwidth]{figures/model_embeddings.png}
+\includegraphics[width=\linewidth]{figures/model_embeddings.png}
 \caption{t-SNE visualization of learned model embeddings from the model encoder. The embeddings separate models by identity and form a clear cost-tier structure, with low-cost models (e.g., GPT-OSS, Gemini) distinct from higher-cost frontier models (e.g., GPT-5).}
 \label{fig:model_embeddings}
 \end{figure}
