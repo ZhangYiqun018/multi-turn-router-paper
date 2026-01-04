@@ -1,6 +1,8 @@
 \begin{table*}[t]
 \centering
 \small
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.06}
 \begin{tabular}{lccc ccc}
 \toprule
 & \multicolumn{3}{c}{\textbf{ScienceWorld (Test)}} & \multicolumn{3}{c}{\textbf{HLE (Test)}} \\
@@ -30,7 +32,7 @@ Router-R1 & -- & -- & -- & 24.2 & \$51.94 & 6.6 \\
 OpenRouter & -26.4 & \$3.03 & 38.2 & 18.3 & \$138.46 & 5.6 \\
 \midrule
 \rowcolor{green!10}
-\method (ours) & 53.8 & \$5.74 & 29.1 & 26.0 & \$34.97 & 11.9 \\
+\method (ours) & \textbf{53.8} & \$5.74 & 29.1 & \textbf{26.0} & \$34.97 & 11.9 \\
 \bottomrule
 \end{tabular}
 \caption{Main results on ScienceWorld and HLE test sets. Avg Score/Avg Turns are per-episode averages (ScienceWorld score in 0--100; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. ``--'' indicates results omitted or not available.}
