@@ -12,6 +12,17 @@ Because agentic systems are often deployed in open-ended settings, robustness to
 
 \textbf{HLE (Humanity's Last Exam)} is a challenging long-context benchmark spanning academic domains. Questions require multi-step reasoning with tool use (web search, Python execution, file reading). Success is binary based on answer correctness. We use 6 subject categories (Math, Physics, Chemistry, Biology/Medicine, Engineering, Computer Science/AI) for training, with 2 categories (Humanities/Social Science, Other) held out for OOD evaluation.
 
+\paragraph{Tool Configuration.}
+\textbf{HLE.} We enable four tools: \texttt{search}, \texttt{browse}, \texttt{python}, and \texttt{answer}.
+The \texttt{search} tool uses Serper's Google Search API to retrieve web results given a query.
+The \texttt{browse} tool fetches webpage content (via Jina Reader when enabled) and, to avoid context overflow from long pages, truncates the retrieved content and uses a separate summarization model to extract goal-relevant evidence (Appendix~\ref{app:prompts:browse}).
+We use \texttt{python} for deterministic computation and \texttt{answer} to submit the final response.
+Tool schemas are injected into the HLE system prompt at runtime and are listed explicitly in Appendix~\ref{app:tool_schemas}.
+
+\textbf{ScienceWorld.} ScienceWorld does not require external web tools.
+We interact with the environment through a single text-action interface: at each turn, the agent outputs exactly one command in a \texttt{```text} block and receives an observation from the simulator.
+The environment additionally provides built-in query commands (e.g., \texttt{?navigation}, \texttt{?object}) to enumerate valid actions without consuming a game turn, which we include as part of the default interaction protocol.
+
 \paragraph{Model Pool.}
 We evaluate with 6 frontier LLMs spanning a 100$\times$ cost range:
 
