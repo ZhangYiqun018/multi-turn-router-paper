@@ -4,7 +4,7 @@
 Our approach learns from logged trajectories, which limits the router's ability to discover novel routing strategies not represented in the training data. While the roulette collection policy provides coverage, the learned Q-function may overestimate or underestimate values for state-action pairs rarely observed during collection. Conservative offline RL methods could potentially address this, but we leave exploration of these techniques to future work.
 
 \paragraph{Counterfactual Evaluation Gap.}
-We cannot observe what would have happened had a different model been chosen at step $t$---the trajectory would have diverged. Our evaluation compares routing methods on aggregate metrics (success rate, cost), but we cannot make strong claims about the optimality of individual routing decisions. The positive Q-deltas during switching provide indirect evidence that the router makes reasonable choices.
+We cannot observe what would have happened had a different model been chosen at step $t$---the trajectory would have diverged. Our evaluation compares routing methods on aggregate metrics (score, cost), but we cannot make strong claims about the optimality of individual routing decisions. The positive Q-deltas during switching provide indirect evidence that the router makes reasonable choices.
 
 \paragraph{Benchmark Coverage.}
 We evaluate on ScienceWorld and HLE, which, while diverse, do not cover all multi-turn agent scenarios. The routing patterns learned (e.g., use expensive models for planning) may not transfer to benchmarks with fundamentally different structure, such as open-ended coding tasks or embodied agents. Extension to additional benchmarks like SWE-bench and WebArena remains important future work.
@@ -16,4 +16,4 @@ Our framework assumes a fixed model pool during training and deployment. In prac
 The router is trained on specific task distributions (ScienceWorld task types, HLE subject categories). Out-of-distribution generalization, while tested on held-out categories, may degrade significantly for completely novel task types. The history encoder captures semantic similarity, which provides some robustness, but substantial domain shift could affect routing quality.
 
 \paragraph{Computational Overhead.}
-While \textsc{LearnedRouter} reduces LLM inference costs, it introduces additional computation for history encoding (running the embedding model) and Q-value computation. For very short episodes, this overhead may outweigh the routing benefits. However, for episodes with 10+ steps, the routing savings typically dominate.
+While \method reduces LLM inference costs, it introduces additional computation for history encoding (running the embedding model) and Q-value computation. For very short episodes, this overhead may outweigh the routing benefits. However, for episodes with 10+ steps, the routing savings typically dominate.

@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llc}
+\toprule
+\textbf{Model} & \textbf{Task} & \textbf{Spec. Index} \\
+\midrule
+\rowcolor{geminicolor!20} Gemini-Flash & chemistry-mix & 7.02$\times$ \\
+\rowcolor{geminicolor!20} Gemini-Flash & identify-life & 4.06$\times$ \\
+\rowcolor{gptosscolor!20} GPT-OSS-120B & melt & 3.35$\times$ \\
+\rowcolor{gpt5color!20} GPT-5 & boil & 3.02$\times$ \\
+\rowcolor{gpt5color!20} GPT-5 & grow-plant & 2.53$\times$ \\
+\rowcolor{gptosscolor!20} GPT-OSS-120B & lifespan & 1.90$\times$ \\
+\bottomrule
+\end{tabular}
+\caption{Model specialization across ScienceWorld task categories. Specialization index = model's usage fraction on task / overall usage fraction. Values $>$1 indicate the model is used more often for that task than average.}
+\label{tab:specialization}
+\end{table}

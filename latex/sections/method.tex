@@ -82,7 +82,7 @@ $\rightarrow z_a \in \mathbb{R}^{64}$
 \draw[dashed, gray] (model_enc) -- (moddet);
 
 \end{tikzpicture}
-\caption{\textbf{Overview of \textsc{LearnedRouter}.} \textbf{Left:} Offline trajectories are collected under a roulette policy that randomly samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head Q-network predicts expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
+\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a roulette policy that randomly samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head Q-network predicts expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
 \label{fig:method_overview}
 \end{figure*}
 
@@ -178,10 +178,12 @@ The $\lambda$ parameter can be adjusted at inference time without retraining, al
 
 We compare against several baseline routing strategies:
 
-\textbf{Random Router.} Uniformly samples from the model pool at each step: $\pi(a|h_t) = 1/|\mathcal{A}|$.
+\textbf{Roulette.} Uniformly samples from the model pool at each step: $\pi(a|h_t) = 1/|\mathcal{A}|$. This matches the roulette collection policy used to gather offline trajectories.
 
-\textbf{Heuristic Router.} A rule-based policy: (1) use the strongest model (GPT-5) for the first step; (2) switch to the strongest model after detecting errors; (3) in late phase ($t \geq 0.67 \cdot T_{\max}$), use a value-oriented model; (4) otherwise, sample from cheap models.
+\textbf{Single-Turn Routers (step-wise).} We adapt three single-turn routing methods---RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and Avengers \citep{lu2024avengers}---to the multi-turn setting by applying them independently at each step. Concretely, each router consumes the current history $h_t$ (treated as the ``query'') and selects a model $a_t$ from the pool based on its single-turn scoring rule.
 
-\textbf{LLM Router.} Uses a policy LLM (DeepSeek-V3.2) to select models based on conversation context and model descriptions. The LLM is prompted with the last 3 turns and outputs a model selection with reasoning.
+\textbf{Router-R1.} A multi-turn LLM router baseline that uses a policy LLM (DeepSeek-V3.2) to choose which model to invoke at each step based on the last 3 turns and model descriptions. We include the policy LLM cost when reporting total cost.
 
-\textbf{Per-Model Ridge.} A simpler learned baseline: train independent Ridge regression models for each candidate, predicting score from history embeddings. At inference, select the model with highest predicted score minus $\lambda \cdot \text{predicted\_cost}$.
+\textbf{LLM Router.} A multi-turn LLM router baseline that uses DeepSeek-V3 as the policy model. We use the same routing prompt/template as Router-R1; only the policy model is changed.
+
+\textbf{OpenRouter.} A representative commercial routing solution \citep{openrouter} that uses OpenRouter's automatic routing API to select which model to invoke at each step. We treat the router as a black box and provide it with the same per-step history context used by other routing baselines. Notably, OpenRouter can route over a substantially larger candidate set than our fixed 6-model pool (Appendix~\ref{app:openrouter}), making this baseline strictly more powerful in terms of available model options.

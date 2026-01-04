@@ -1,6 +1,6 @@
 % Experiments section
 
-We evaluate \textsc{LearnedRouter} on two challenging multi-turn benchmarks and analyze the learned routing patterns.
+We evaluate \method on two challenging multi-turn benchmarks and analyze the learned routing patterns.
 
 \subsection{Experimental Setup}
 
@@ -14,100 +14,35 @@ We evaluate on two diverse benchmarks:
 \paragraph{Model Pool.}
 We evaluate with 6 frontier LLMs spanning a 100$\times$ cost range:
 
-\begin{table}[h]
-\centering
-\small
-\begin{tabular}{lrrr}
-\toprule
-\textbf{Model} & \textbf{Context} & \textbf{In \$/M} & \textbf{Out \$/M} \\
-\midrule
-GPT-5 & 400K & 1.25 & 10.00 \\
-DeepSeek-V3.2 & 164K & 0.27 & 0.42 \\
-MiniMax-M2 & 197K & 0.20 & 1.00 \\
-Kimi-K2 & 131K & 0.39 & 1.90 \\
-Gemini-Flash & 1M & 0.10 & 0.40 \\
-GPT-OSS-120B & 131K & 0.09 & 0.36 \\
-\bottomrule
-\end{tabular}
-\caption{Model pool with pricing (per million tokens).}
-\label{tab:model_pool}
-\end{table}
+\input{tables/model_pool}
 
 \paragraph{Training Details.}
 We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64. History embeddings are precomputed using vLLM for efficiency. Training takes approximately 2 hours on a single A100 GPU.
 
 \paragraph{Baselines.}
-We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform sampling; (3) \textbf{LLM Router}: DeepSeek-V3.2 as policy model; (4) \textbf{Per-Model Ridge}: linear regression per model; (5) \textbf{Roulette}: the data collection policy.
+We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Roulette}: uniform random selection at each step; (3) \textbf{Router-R1}: a multi-turn LLM router baseline; (4) \textbf{LLM Router}: a multi-turn LLM router baseline; (5) \textbf{OpenRouter}: a representative commercial router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Step-wise single-turn routers}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and Avengers \citep{lu2024avengers} applied independently at each step. We emphasize that OpenRouter can route over a substantially larger candidate set than our fixed 6-model pool (Appendix~\ref{app:openrouter}), so it is advantaged in terms of available model options.
 
 \subsection{Main Results}
 \label{sec:main_results}
 
-\begin{table*}[t]
-\centering
-\small
-\begin{tabular}{l|ccc|ccc}
-\toprule
-& \multicolumn{3}{c|}{\textbf{ScienceWorld (Test)}} & \multicolumn{3}{c}{\textbf{HLE (Test)}} \\
-\textbf{Method} & \textbf{Score} $\uparrow$ & \textbf{SR\%} $\uparrow$ & \textbf{Cost} $\downarrow$ & \textbf{SR\%} $\uparrow$ & \textbf{Cost} $\downarrow$ & \textbf{Steps} \\
-\midrule
-\multicolumn{7}{c}{\textit{Single-Model Baselines}} \\
-\midrule
-GPT-5 & 48.4 & 47.3 & \$0.188 & 25.1 & \$0.172 & 7.0 \\
-DeepSeek-V3.2 & 13.1 & 17.6 & \$0.027 & 15.6 & \$0.062 & 26.0 \\
-MiniMax-M2 & -0.5 & 22.4 & \$0.029 & 7.8 & \$0.050 & 27.0 \\
-Kimi-K2 & 5.2 & 30.6 & \$0.024 & 11.4 & \$0.034 & 16.2 \\
-Gemini-Flash & 4.2 & 23.0 & \$0.004 & 5.6 & \$0.008 & 6.8 \\
-GPT-OSS-120B & 27.4 & 33.3 & \$0.007 & 9.9 & \$0.002 & 11.4 \\
-\midrule
-\multicolumn{7}{c}{\textit{Routing Methods}} \\
-\midrule
-Random Router & 38.2 & 43.8 & \$0.054 & 24.2 & \$0.078 & 10.2 \\
-LLM Router (DeepSeek) & 19.8 & 37.8 & \$0.165$^\dagger$ & -- & -- & -- \\
-Per-Model Ridge ($\lambda$=0) & 31.2 & 43.2 & \$0.085 & -- & -- & -- \\
-\midrule
-\rowcolor{green!10}
-\textsc{LearnedRouter} ($\lambda$=0) & 39.6 & 43.2 & \$0.118 & 22.0 & \$0.108 & 11.1 \\
-\rowcolor{green!10}
-\textsc{LearnedRouter}+ ($\lambda$=0) & \textbf{53.8} & \textbf{47.3} & \$0.078 & \textbf{21.0} & \$0.094 & 8.8 \\
-\bottomrule
-\end{tabular}
-\caption{Main results on ScienceWorld and HLE test sets. SR\% = Success Rate. $\dagger$ = includes router LLM cost (\$0.277 additional). \textsc{LearnedRouter}+ uses $\epsilon$-greedy exploration ($\epsilon$=0.1). Best results in \textbf{bold}.}
-\label{tab:main_results}
-\end{table*}
+\input{tables/main_results}
 
 Table~\ref{tab:main_results} presents our main results. Key findings:
 
 \paragraph{Matching best single-model at lower cost.}
-On ScienceWorld, \textsc{LearnedRouter}+ achieves 47.3\% success rate---matching GPT-5---while reducing cost from \$0.188 to \$0.078 (59\% reduction). The average score improves from 39.6 to 53.8 when adding exploration noise.
+On ScienceWorld, GPT-5 achieves the strongest single-model performance (48.4 score). We compare routing methods against this oracle baseline while tracking cost and steps.
 
 \paragraph{Outperforming naive routing.}
-Random routing achieves surprisingly strong performance (43.8\% SR) by mixing model capabilities, but at higher cost (\$0.054) than our learned approach with similar accuracy. The LLM Router underperforms despite additional routing cost, suggesting that explicit learning outperforms in-context model selection.
+Roulette achieves strong performance (37.7 score on ScienceWorld; 24.2\% on HLE) by mixing model capabilities. In contrast, the commercial OpenRouter baseline performs poorly on ScienceWorld.
 
 \paragraph{Cross-benchmark transfer.}
-On HLE, \textsc{LearnedRouter} achieves 22.0\% success rate at \$0.108 per episode, compared to GPT-5's 25.1\% at \$0.172 (37\% cost reduction with 3.1\% SR drop). The router learned on ScienceWorld+HLE generalizes across task types.
+On HLE, LLM Router achieves 24.0\% accuracy, close to GPT-5 (25.1\%), while OpenRouter attains 18.3\%.
 
 \subsection{Out-of-Distribution Generalization}
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{l|cc}
-\toprule
-\textbf{Method} & \textbf{HLE-OOD SR\%} & \textbf{Cost} \\
-\midrule
-GPT-5 & 35.0 & \$0.177 \\
-DeepSeek-V3.2 & 28.7 & \$0.060 \\
-Kimi-K2 & 20.1 & \$0.027 \\
-GPT-OSS-120B & 11.4 & \$0.006 \\
-\midrule
-Random Router & 23.9 & \$0.040 \\
-\bottomrule
-\end{tabular}
-\caption{Out-of-distribution results on HLE (Humanities/Social Science and Other categories). Model pool trained on STEM categories.}
-\label{tab:ood_results}
-\end{table}
+\input{tables/ood_results}
 
-Table~\ref{tab:ood_results} shows OOD performance on HLE categories not seen during training. GPT-5 maintains the highest success rate (35.0\%), with DeepSeek showing competitive OOD performance (28.7\%) at lower cost. The random router achieves 23.9\%, demonstrating that model diversity provides OOD robustness.
+Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld task types and held-out HLE categories. We include OpenRouter as a strong practical baseline that is advantaged by a larger candidate pool (Appendix~\ref{app:openrouter}).
 
 \subsection{Analysis}
 \label{sec:analysis}
@@ -147,57 +82,16 @@ Figure~\ref{fig:phase_usage} shows model usage across episode phases. In early s
 \paragraph{Error-triggered model switching.}
 We analyze model switches triggered by errors (format errors, invalid actions). On ScienceWorld, 4.1\% of switches follow errors, with 100\% of error-to-premium switches leading to eventual success. On HLE, 49.0\% of switches are error-triggered, with format errors being most common (233 instances). The router learns to ``escalate'' to stronger models when errors occur.
 
-\begin{figure}[t]
-\centering
-\begin{tikzpicture}[scale=0.85]
-\begin{axis}[
-    xbar,
-    bar width=8pt,
-    xlabel={Specialization Index},
-    ylabel={},
-    symbolic y coords={test-conduct., mendelian, find-plant, boil, grow-plant, chemistry},
-    ytick=data,
-    xmin=0, xmax=8,
-    width=0.95\columnwidth,
-    height=5cm,
-    nodes near coords,
-    nodes near coords align={horizontal},
-    every node near coord/.append style={font=\tiny},
-]
-\addplot[fill=geminicolor!80] coordinates {(7.02, chemistry) (4.06, test-conduct.)};
-\addplot[fill=gpt5color!80] coordinates {(3.02, boil) (2.53, grow-plant)};
-\addplot[fill=gptosscolor!80] coordinates {(3.35, find-plant) (1.90, mendelian)};
-\end{axis}
-\end{tikzpicture}
-\caption{Model specialization across ScienceWorld task categories. Specialization index = usage fraction / overall fraction. Gemini excels at chemistry-mix, GPT-5 at boiling/growing, GPT-OSS at identification tasks.}
-\label{fig:specialization}
-\end{figure}
+\input{tables/specialization}
 
 \paragraph{Task-specific model specialization.}
-Figure~\ref{fig:specialization} reveals emergent specialization: Gemini-Flash is used 7$\times$ more for chemistry-mix tasks (perhaps benefiting from its large context), while GPT-5 dominates boiling tasks (3$\times$). GPT-OSS-120B specializes in identification tasks (lifespan, find-plant). This specialization emerges purely from learning, without explicit task-model assignments.
+Table~\ref{tab:specialization} reveals emergent specialization: Gemini-Flash is used 7$\times$ more for chemistry-mix tasks (perhaps benefiting from its large context), while GPT-5 dominates boiling tasks (3$\times$). GPT-OSS-120B specializes in identification tasks (lifespan, melt). This specialization emerges purely from learning, without explicit task-model assignments.
 
 \paragraph{Q-value dynamics during switching.}
 When the router switches models, Q-values consistently improve: the average Q-delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive Q-delta, indicating the router confidently believes switching improves expected outcomes.
 
 \subsection{Ablation Studies}
 
-\begin{table}[t]
-\centering
-\small
-\begin{tabular}{l|cc}
-\toprule
-\textbf{Variant} & \textbf{SW Score} & \textbf{SW SR\%} \\
-\midrule
-Full model & 53.8 & 47.3 \\
-\midrule
-w/o residual embeddings & 48.2 & 43.2 \\
-w/o attribute features & 51.1 & 45.9 \\
-Ridge instead of MLP & 31.2 & 43.2 \\
-3-model pool only & 45.6 & 41.9 \\
-\bottomrule
-\end{tabular}
-\caption{Ablation study on ScienceWorld test set.}
-\label{tab:ablation}
-\end{table}
+\input{tables/ablation}
 
-Table~\ref{tab:ablation} shows ablation results. Removing residual embeddings reduces score by 5.6 points, confirming their importance for capturing model-specific effects. Using Ridge regression instead of the MLP Q-network drops score significantly (31.2 vs 53.8), validating the need for nonlinear function approximation. Reducing the model pool from 6 to 3 models decreases SR by 5.4\%, suggesting diversity benefits.
+Table~\ref{tab:ablation} reports ablations on ScienceWorld; results are omitted here pending final runs.

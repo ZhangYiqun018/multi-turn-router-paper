@@ -1,8 +1,8 @@
 % Conclusion
 
-We presented \textsc{LearnedRouter}, a framework for multi-turn model routing in LLM agent evaluation. By learning a Q-function from offline trajectories, our approach enables dynamic model selection that adapts to the evolving state of agent interactions. The key insight is that different phases of task execution have different capability requirements: initial planning benefits from expensive frontier models, while routine execution can use cheaper alternatives without sacrificing success rates.
+We presented \method, a framework for multi-turn model routing in LLM agent evaluation. By learning a Q-function from offline trajectories, our approach enables dynamic model selection that adapts to the evolving state of agent interactions. The key insight is that different phases of task execution have different capability requirements: initial planning benefits from expensive frontier models, while routine execution can use cheaper alternatives without sacrificing overall score.
 
-Our experiments on ScienceWorld and HLE demonstrate that \textsc{LearnedRouter} matches the performance of the best single model (GPT-5) while reducing costs by up to 59\%. Analysis reveals that the router learns meaningful patterns: phase-dependent selection, error-triggered escalation, and task-specific model specialization---all emerging from data without explicit programming.
+Our experiments on ScienceWorld and HLE highlight the promise of offline value learning for budget-controlled multi-turn routing. Analysis reveals that the router learns meaningful patterns: phase-dependent selection, error-triggered escalation, and task-specific model specialization---all emerging from data without explicit programming.
 
 The framework has immediate practical applications for cost-sensitive agent deployment. By adjusting the $\lambda$ parameter at inference time, practitioners can navigate the cost-quality Pareto frontier based on their budget constraints. The modular design allows integration with any multi-turn agent system and extension to new model pools and benchmarks.
 
