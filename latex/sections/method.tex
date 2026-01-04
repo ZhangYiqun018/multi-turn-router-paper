@@ -82,7 +82,7 @@ $\rightarrow z_a \in \mathbb{R}^{64}$
 \draw[dashed, gray] (model_enc) -- (moddet);
 
 \end{tikzpicture}
-\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a roulette policy that randomly samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head Q-network predicts expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
+\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a random router policy that uniformly samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head Q-network predicts expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
 \label{fig:method_overview}
 \end{figure*}
 
@@ -161,9 +161,9 @@ The loss combines score and cost prediction:
 where $w_c$ is the cost loss weight (set to 0 in our experiments, as we found score prediction sufficient for effective routing).
 
 \paragraph{Data Collection.}
-We collect trajectories under a \textbf{roulette policy} that uniformly samples from the model pool at each step: $\mu(a|h_t) = 1/|\mathcal{A}|$. This ensures coverage over the action space, which is critical for offline learning.
+We collect trajectories under a \textbf{random router policy} that uniformly samples from the model pool at each step: $\mu(a|h_t) = 1/|\mathcal{A}|$. This ensures coverage over the action space, which is critical for offline learning.
 
-For each task variation, we run 5 roulette episodes and 3 baseline episodes (single-model runs). The combined dataset contains 137K training samples across both benchmarks.
+For each task variation, we run 5 random-router episodes and 3 baseline episodes (single-model runs). The combined dataset contains 137K training samples across both benchmarks.
 
 \paragraph{Inference.}
 At deployment, the router selects models greedily:
@@ -178,7 +178,7 @@ The $\lambda$ parameter can be adjusted at inference time without retraining, al
 
 We compare against several baseline routing strategies:
 
-\textbf{Roulette.} Uniformly samples from the model pool at each step: $\pi(a|h_t) = 1/|\mathcal{A}|$. This matches the roulette collection policy used to gather offline trajectories.
+\textbf{Random Router.} Uniformly samples from the model pool at each step: $\pi(a|h_t) = 1/|\mathcal{A}|$. This matches the random-router collection policy used to gather offline trajectories.
 
 \textbf{Single-Turn Routers (episode-level).} We include three single-turn routing methods---RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and Avengers \citep{lu2024avengers}---as \emph{per-episode} routers: at the beginning of an episode, the router consumes the initial query context (history) and selects a model $a$ from the pool; the agent then uses the same model for all subsequent turns in the episode. This baseline is intentionally stronger than a fixed single-model choice (it can tailor the model to the query), but it cannot adapt to within-episode phase changes or error recovery, thereby highlighting the need for multi-turn routing.
 

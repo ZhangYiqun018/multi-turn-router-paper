@@ -70,7 +70,7 @@ where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step cost,
 
 Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed reward}: only terminal success/failure is observed, requiring credit assignment across dozens of steps; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
 
-Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing policies. We collect trajectories under a stochastic ``roulette'' policy that randomly samples models at each step, providing coverage over the action space. From these trajectories, we train a Q-function $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted return for selecting model $a$ given history $h_t$.
+Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing policies. We collect trajectories under a stochastic random router policy that uniformly samples models at each step, providing coverage over the action space. From these trajectories, we train a Q-function $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted return for selecting model $a$ given history $h_t$.
 
 \paragraph{Contributions.} We make the following contributions:
 
