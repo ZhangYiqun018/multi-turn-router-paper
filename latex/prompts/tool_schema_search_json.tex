@@ -1,0 +1,38 @@
+\begin{tcolorbox}[
+    enhanced,
+    title=\textbf{Tool Schema: search},
+    colback=white,
+    colframe=black!90,
+    coltitle=white,
+    fonttitle=\bfseries\small,
+    boxrule=0.8pt,
+    arc=2mm,
+    attach boxed title to top left={xshift=4mm, yshift=-3mm},
+    boxed title style={colback=black!90, sharp corners=south}
+]
+\begin{lstlisting}[language=json]
+{
+  "name": "search",
+  "description": "Search the web for information using Google",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "oneOf": [
+          { "type": "string" },
+          { "type": "array", "items": { "type": "string" } }
+        ],
+        "description": "Search query or list of queries for batch search"
+      },
+      "num_results": {
+        "type": "integer",
+        "description": "Number of results to return (default: 10)",
+        "minimum": 1,
+        "maximum": 100
+      }
+    }
+  },
+  "required": [ "query" ]
+}
+\end{lstlisting}
+\end{tcolorbox}

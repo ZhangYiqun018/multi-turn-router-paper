@@ -1,36 +1,47 @@
-\begin{lstlisting}[style=prompt]
-<task_description>
-{{task_description}}
-</task_description>
+\begin{paperbox}[breakable]{ScienceWorld Instance Prompt}
+\texttt{<task\_description>} \\
+\texttt{\{\{task\_description\}\}} \\
+\texttt{</task\_description>}
 
-<initial_observation>
-{{initial_observation}}
-</initial_observation>
+\vspace{0.2cm}
+\texttt{<initial\_observation>} \\
+\texttt{\{\{initial\_observation\}\}} \\
+\texttt{</initial\_observation>}
 
-<instructions>
+\vspace{0.2cm}
+\texttt{<instructions>} \\
 Complete the science experiment described above. You are interacting with a simulated environment.
 Issue commands one at a time and observe the results.
 
-**Tip:** Use query commands like `?navigation` or `?object` to explore available actions without consuming a turn.
+\vspace{0.2cm}
+\textbf{Tip}: Use query commands like \texttt{?navigation} or \texttt{?object} to explore available actions without consuming a turn.
 
-**Strategy hints:**
-- First explore: use "open door to [room]" then "go to [room]" to navigate
-- Look around each room to find objects you need
-- Pick up objects with "pick up [object]"
-- For heating: find a stove, turn it on with "activate [stove]", place container on it
-- For cooling: use a freezer or refrigerator
-- Use "focus on [object]" to examine substances
+\vspace{0.2cm}
+\textbf{Strategy hints:}
+\begin{itemize}
+\item First explore: use \texttt{open door to [room]} then \texttt{go to [room]} to navigate
+\item Look around each room to find objects you need
+\item Pick up objects with \texttt{pick up [object]}
+\item For heating: find a stove, turn it on with \texttt{activate [stove]}, place container on it
+\item For cooling: use a freezer or refrigerator
+\item Use \texttt{focus on [object]} to examine substances
+\end{itemize}
 
+\vspace{0.2cm}
 To complete the task, perform the necessary actions described in the task description.
 When you believe the task is complete, issue the command:
 
-```text
-task completed
-```
+\vspace{0.2cm}
+\texttt{```text} \\
+\texttt{task completed} \\
+\texttt{```}
 
-Remember:
-- Think step by step about what actions are needed
-- Explore your environment to find needed objects
-- Some actions may require prerequisites (e.g., picking up an object before using it)
-</instructions>
-\end{lstlisting}
+\vspace{0.2cm}
+\textbf{Remember:}
+\begin{itemize}
+\item Think step by step about what actions are needed
+\item Explore your environment to find needed objects
+\item Some actions may require prerequisites (e.g., picking up an object before using it)
+\end{itemize}
+\texttt{</instructions>}
+\end{paperbox}

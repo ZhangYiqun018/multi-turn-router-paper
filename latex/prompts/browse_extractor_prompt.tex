@@ -1,16 +1,22 @@
-\begin{lstlisting}[style=prompt]
+\begin{paperbox}[breakable]{Browse Extractor Prompt (LLM Summary)}
 Please process the following webpage content and user goal to extract relevant information:
 
-## **Webpage Content**
-{webpage_content}
+\vspace{0.3cm}
+\textbf{\large Webpage Content} \\
+\{webpage\_content\}
 
-## **User Goal**
-{goal}
+\vspace{0.3cm}
+\textbf{\large User Goal} \\
+\{goal\}
 
-## **Task Guidelines**
-1. **Content Scanning for Rationale**: Locate the **specific sections/data** directly related to the user's goal within the webpage content
-2. **Key Extraction for Evidence**: Identify and extract the **most relevant information** from the content, you never miss any important information, output the **full original context** of the content as far as possible, it can be more than three paragraphs.
-3. **Summary Output for Summary**: Organize into a concise paragraph with logical flow, prioritizing clarity and judge the contribution of the information to the goal.
+\vspace{0.3cm}
+\textbf{\large Task Guidelines}
+\begin{enumerate}[leftmargin=*, label=\arabic*.]
+\item \textbf{Content Scanning for Rationale}: Locate the \textbf{specific sections/data} directly related to the user's goal within the webpage content
+\item \textbf{Key Extraction for Evidence}: Identify and extract the \textbf{most relevant information} from the content; do not miss important information. Output the \textbf{full original context} as much as possible (it can exceed three paragraphs).
+\item \textbf{Summary Output for Summary}: Organize into a concise paragraph with logical flow, prioritizing clarity and judging the contribution of the information to the goal.
+\end{enumerate}
 
-**Final Output Format using JSON format has "rational", "evidence", "summary" fields**
-\end{lstlisting}
+\vspace{0.2cm}
+\textbf{Output Format}: JSON format containing \texttt{"rational"}, \texttt{"evidence"}, and \texttt{"summary"} fields.
+\end{paperbox}

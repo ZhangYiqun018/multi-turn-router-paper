@@ -1,0 +1,38 @@
+\begin{tcolorbox}[
+    enhanced,
+    title=\textbf{Tool Schema: browse},
+    colback=white,
+    colframe=black!90,
+    coltitle=white,
+    fonttitle=\bfseries\small,
+    boxrule=0.8pt,
+    arc=2mm,
+    attach boxed title to top left={xshift=4mm, yshift=-3mm},
+    boxed title style={colback=black!90, sharp corners=south}
+]
+\begin{lstlisting}[language=json]
+{
+  "name": "browse",
+  "description": "Visit webpage(s) and extract information based on a goal",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "url": {
+        "type": "string",
+        "description": "URL to visit. Can be a single URL or array of URLs."
+      },
+      "goal": {
+        "type": "string",
+        "description": "The goal of the visit - what information to extract from the webpage(s)."
+      },
+      "extract_mode": {
+        "type": "string",
+        "enum": [ "text", "markdown", "html" ],
+        "description": "Content extraction mode (default: text). Only used when LLM summary is disabled."
+      }
+    }
+  },
+  "required": [ "url", "goal" ]
+}
+\end{lstlisting}
+\end{tcolorbox}

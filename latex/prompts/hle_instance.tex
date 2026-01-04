@@ -1,14 +1,17 @@
-\begin{lstlisting}[style=prompt]
-## HLE Question
-{% if subject %}
-**Subject**: {{ subject }}
-{% endif %}
+\begin{paperbox}[breakable]{HLE Instance Prompt}
+\textbf{HLE Question} \\
+\texttt{\{\% if subject \%\}} \\
+\textbf{Subject}: \texttt{\{\{ subject \}\}} \\
+\texttt{\{\% endif \%\}}
 
-{{ question | default(task) }}
+\vspace{0.2cm}
+\texttt{\{\{ question | default(task) \}\}}
 
----
+\vspace{0.2cm}
+\hrule
+\vspace{0.2cm}
 
 Solve this step by step. Use tools to research and verify.
-Submit your final answer using the `answer` tool:
-<tool_call>{"name": "answer", "arguments": {"answer": "your final answer"}}</tool_call>
-\end{lstlisting}
+Submit your final answer using the \texttt{answer} tool:
+\texttt{<tool\_call>\{"name": "answer", "arguments": \{"answer": "your final answer"\}\}</tool\_call>}
+\end{paperbox}

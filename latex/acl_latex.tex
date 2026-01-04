@@ -64,16 +64,17 @@
   #1
 }
 
-\lstdefinestyle{prompt}{
+\lstset{
   basicstyle=\ttfamily\footnotesize,
   breaklines=true,
   columns=fullflexible,
-  keepspaces=true,
-  frame=single,
-  rulecolor=\color{black!40},
-  framerule=0.4pt,
-  xleftmargin=0.5em,
-  xrightmargin=0.5em
+  keepspaces=true
+}
+
+\lstdefinelanguage{json}{
+  morestring=[b]",
+  morecomment=[l]{//},
+  showstringspaces=false
 }
 
 \newcommand{\method}{\textsc{VOLT}}

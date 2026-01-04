@@ -1,0 +1,39 @@
+\begin{tcolorbox}[
+    enhanced,
+    title=\textbf{Tool Schema: answer},
+    colback=white,
+    colframe=black!90,
+    coltitle=white,
+    fonttitle=\bfseries\small,
+    boxrule=0.8pt,
+    arc=2mm,
+    attach boxed title to top left={xshift=4mm, yshift=-3mm},
+    boxed title style={colback=black!90, sharp corners=south}
+]
+\begin{lstlisting}[language=json]
+{
+  "name": "answer",
+  "description": "Submit your final answer to complete the task",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "answer": {
+        "type": "string",
+        "description": "The final answer to submit"
+      },
+      "confidence": {
+        "type": "number",
+        "description": "Confidence level from 0 to 1 (optional)",
+        "minimum": 0,
+        "maximum": 1
+      },
+      "reasoning": {
+        "type": "string",
+        "description": "Brief explanation of how you arrived at the answer (optional)"
+      }
+    }
+  },
+  "required": [ "answer" ]
+}
+\end{lstlisting}
+\end{tcolorbox}
