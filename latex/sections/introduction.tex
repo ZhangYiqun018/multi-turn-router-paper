@@ -60,28 +60,28 @@ Single (GPT-5) & \$0.19 & \checkmark \\
 
 Consider the scenario in Figure~\ref{fig:toy_example}: an agent must boil water in ScienceWorld, a text-based science simulation. The task requires 10 interaction steps: planning what to do, navigating to the kitchen, finding a container, filling it with water, locating a heat source, and activating it. A single-model approach using GPT-5 succeeds but costs \$0.19 per episode. However, not all steps require frontier capabilities---navigation commands like ``go to kitchen'' are routine, while initial planning and error recovery benefit from stronger reasoning. Our \method learns this pattern from data: it selects GPT-5 for the critical first step and when errors occur, but routes to the 14$\times$ cheaper GPT-OSS for execution steps, achieving similar task outcomes at 58\% lower cost.
 
-This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router $\pi$ selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
+This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
 
 We formalize this as optimizing a cost-adjusted objective:
 \begin{equation}
-J_\lambda(\pi) = \mathbb{E}_\pi\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
+J_\lambda = \mathbb{E}\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
 \end{equation}
-where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step cost, and $\lambda \geq 0$ is a user-controllable penalty. This formulation exposes the cost-quality trade-off directly: at $\lambda=0$, the router maximizes performance; as $\lambda$ increases, it increasingly favors cheaper models.
+where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step cost, and $\lambda \geq 0$ is a user-controllable penalty. This formulation exposes the cost-quality trade-off directly: smaller $\lambda$ prioritizes performance, while larger $\lambda$ increasingly favors cheaper models.
 
-Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed reward}: only terminal success/failure is observed, requiring credit assignment across dozens of steps; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
+Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed feedback}: only terminal success/failure is observed, so early decisions are only judged much later; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
 
-Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing policies. We collect trajectories under a stochastic random router policy that uniformly samples models at each step, providing coverage over the action space. From these trajectories, we train a Q-function $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted return for selecting model $a$ given history $h_t$.
+Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing. We collect trajectories under a uniform (random) router that samples models at each step, providing broad coverage over model choices. From these trajectories, we train a value model $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted outcome of selecting model $a$ given history $h_t$.
 
 \paragraph{Contributions.} We make the following contributions:
 
 \begin{itemize}
 \item \textbf{Framework}: We introduce a modular multi-turn agent evaluation framework with an explicit routing layer, supporting pluggable routers, model pools, and benchmarks (\S\ref{sec:method}).
 
-\item \textbf{Method}: We propose \method, which learns a dual-head Q-function (predicting score and cost separately) from offline trajectories, enabling deployment-time $\lambda$ adjustment without retraining (\S\ref{sec:learning}).
+\item \textbf{Method}: We propose \method, which learns a dual-head value model (predicting score and cost separately) from offline trajectories, enabling deployment-time $\lambda$ adjustment without retraining (\S\ref{sec:learning}).
 
 \item \textbf{Evaluation}: We evaluate on ScienceWorld (13 procedural tasks) and HLE (6 academic domains) with 6 frontier LLMs, comparing learned routing against strong single-model and commercial routing baselines (\S\ref{sec:experiments}).
 
-\item \textbf{Analysis}: We analyze learned routing patterns, finding that the router prefers expensive models for planning and error recovery, with model specialization emerging across task categories (\S\ref{sec:analysis}).
+\item \textbf{Analysis}: We analyze learned routing patterns, finding that the router prefers expensive models for planning and error recovery.
 \end{itemize}
 
 Our framework, trajectory dataset (137K samples), and trained models are publicly available to facilitate research on cost-aware agent evaluation.\footnote{Code and data will be released upon publication.}

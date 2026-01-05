@@ -37,7 +37,7 @@ Interestingly, GPT-5's error rate (51.8\%) is higher than some cheaper models on
 
 \input{tables/r2_scores}
 
-The Q-function achieves strong predictive performance, with score prediction $R^2$ ranging from 0.689 (Gemini) to 0.792 (GPT-5). Cost prediction is slightly lower, likely due to higher variance in remaining cost depending on success/failure paths.
+The value model achieves strong predictive performance, with score prediction $R^2$ ranging from 0.689 (Gemini) to 0.792 (GPT-5). Cost prediction is slightly lower, likely due to higher variance in remaining cost depending on success/failure paths.
 
 \section{OpenRouter Baseline Details}
 \label{app:openrouter}
@@ -122,9 +122,9 @@ We list each tool's JSON schema (name, description, and parameter schema) used b
 \input{prompts/tool_schema_python_json}
 \input{prompts/tool_schema_answer_json}
 
-\subsection{Routing Policy Prompt for LLM Router / Router-R1}
+\subsection{Routing Model Prompt for LLM Router / Router-R1}
 \label{app:prompts:routing}
-We report the turn-level routing prompt used by the LLM Router baseline and by Router-R1. In both baselines, the routing policy is queried at each turn to produce a \texttt{<select>} decision. They use the same prompt template; Router-R1 uses a trained \texttt{Qwen2.5-7B-Instruct} policy model, while LLM Router directly uses \texttt{DeepSeek-V3.2} (no training).
+We report the turn-level routing prompt used by the LLM Router baseline and by Router-R1. In both baselines, the routing model is queried at each turn to produce a \texttt{<select>} decision. They use the same prompt template; Router-R1 uses a trained \texttt{Qwen2.5-7B-Instruct} routing model, while LLM Router directly uses \texttt{DeepSeek-V3.2} (no training).
 \input{prompts/llmrouter_system}
 \input{prompts/llmrouter_model_descriptors}
 

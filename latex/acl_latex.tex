@@ -41,6 +41,7 @@
 \usepackage{listings}
 \usepackage[most]{tcolorbox} % 必须引入 most 以支持增强功能
 \usepackage{enumitem}
+\usepackage{xspace}
 
 \setlist[itemize]{nolistsep,noitemsep,leftmargin=*}
 \pgfplotsset{compat=1.16}
@@ -77,8 +78,8 @@
   showstringspaces=false
 }
 
-\newcommand{\method}{\textsc{VOLT}}
-\newcommand{\methodplus}{\textsc{VOLT+}}
+\newcommand{\method}{VOLT\xspace}
+% \newcommand{\methodplus}{\textsc{VOLT+}}
 
 \title{VOLT: Offline Value Learning for Budget-Controlled Multi-Turn LLM Routing}
 

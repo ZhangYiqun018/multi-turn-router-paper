@@ -7,7 +7,7 @@
 \toprule
 & \multicolumn{3}{c}{\textbf{ScienceWorld (Test)}} & \multicolumn{3}{c}{\textbf{HLE (Test)}} \\
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
-\textbf{Method} & Avg Score$\uparrow$ & Total Cost (\$)$\downarrow$ & Avg Turns & Acc. (\%)$\uparrow$ & Total Cost (\$)$\downarrow$ & Avg Turns \\
+\textbf{Method} & Avg Score$\textcolor{green!60!black}{\uparrow}$ & Total Cost (\$)$\textcolor{red!70!black}{\downarrow}$ & Avg Turns & Acc. (\%)$\textcolor{green!60!black}{\uparrow}$ & Total Cost (\$)$\textcolor{red!70!black}{\downarrow}$ & Avg Turns \\
 \midrule
 \multicolumn{7}{c}{\textit{Single-Model Baselines}} \\
 \midrule
@@ -20,37 +20,37 @@ GPT-OSS-120B & 26.6 & \$0.49 & 32.8 & 9.7 & \$0.71 & 11.4 \\
 \midrule
 \multicolumn{7}{c}{\textit{Single-Turn Routers (episode-level)}} \\
 \midrule
-RouterDC & 23.1 & \$3.26 & 23.1 & 12.8 & \$10.27 & 14.5 \\
-EmbedLLM & 30.4 & \$5.61 & 30.4 & 24.8 & \$61.36 & 7.5 \\
-AvengersPro & 25.3 & \$4.07 & 25.3 & 23.7 & \$47.50 & 14.1 \\
+RouterDC$^{a}$ & 23.1 & \$3.26 & 23.1 & 12.8 & \$10.27 & 14.5 \\
+EmbedLLM$^{b}$ & 30.4 & \$5.61 & 30.4 & 24.8 & \$61.36 & 7.5 \\
+AvengersPro$^{c}$ & 36.8 & \$4.07 & 25.3 & 23.7 & \$47.50 & 14.1 \\
 \midrule
 \multicolumn{7}{c}{\textit{Multi-Turn Routers (turn-level)}} \\
 \midrule
-Random Router & 37.7 & \$3.94 & 28.5 & -- & -- & -- \\
+Random Router & 21.7 & \$3.94 & 30.68 & 20.0 & \$16.94 & 8.5 \\
 LLM Router & 19.8 & \$12.19 & 36.6 & 24.0 & \$56.23 & 5.8 \\
-Router-R1 & -- & -- & -- & 24.2 & \$51.94 & 6.6 \\
-OpenRouter & -26.4 & \$3.03 & 38.2 & 18.3 & \$138.46 & 5.6 \\
+Router-R1 & 42.1 & \$12.60 & 37.1 & 24.2 & \$51.94 & 6.6 \\
+OpenRouter$^{\dagger}$ & -26.4 & \$3.03 & 38.2 & 18.3 & \$138.46 & 5.6 \\
 \midrule
-\rowcolor{green!10}
-\method (ours) & \textbf{53.8} & \$5.74 & 29.1 & \textbf{26.0} & \$34.97 & 11.9 \\
-\rowcolor{green!6}
+\rowcolor{blue!10}
+\textbf{\method~(ours)} & \textbf{53.8} & \$5.74 & 29.1 & \textbf{26.0} & \$34.97 & 11.9 \\
+\rowcolor{blue!6}
 \multicolumn{1}{l}{\scriptsize\textit{\quad $\Delta$ vs GPT-5}} &
-{\scriptsize\textbf{+5.4}} &
-{\scriptsize\textbf{-\$8.17} (58.7\%)} &
+{\scriptsize\textcolor{blue!70!black}{\textbf{+5.4}}} &
+{\scriptsize\textcolor{orange!85!black}{\textbf{\textit{saving 58.7\%}}}} &
 {\scriptsize\textcolor{black!60}{--}} &
-{\scriptsize\textbf{+0.9}} &
-{\scriptsize\textbf{-\$26.80} (43.4\%)} &
+{\scriptsize\textcolor{blue!70!black}{\textbf{+0.9}}} &
+{\scriptsize\textcolor{orange!85!black}{\textbf{\textit{saving 43.4\%}}}} &
 {\scriptsize\textcolor{black!60}{--}} \\
-\rowcolor{green!6}
+\rowcolor{blue!6}
 \multicolumn{1}{l}{\scriptsize\textit{\quad $\Delta$ vs Router-R1}} &
-{\scriptsize\textcolor{black!60}{n/a}} &
-{\scriptsize\textcolor{black!60}{n/a}} &
+{\scriptsize\textcolor{blue!70!black}{\textbf{+11.7}}} &
+{\scriptsize\textcolor{orange!85!black}{\textbf{\textit{saving 54.4\%}}}} &
 {\scriptsize\textcolor{black!60}{--}} &
-{\scriptsize\textbf{+1.8}} &
-{\scriptsize\textbf{-\$16.97} (32.7\%)} &
+{\scriptsize\textcolor{blue!70!black}{\textbf{+1.8}}} &
+{\scriptsize\textcolor{orange!85!black}{\textbf{\textit{saving 32.7\%}}}} &
 {\scriptsize\textcolor{black!60}{--}} \\
 \bottomrule
 \end{tabular}
-\caption{Main results on ScienceWorld and HLE test sets. Avg Score/Avg Turns are per-episode averages (ScienceWorld score in 0--100; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. The $\Delta$ lines summarize \method's score gains and cost savings relative to GPT-5 and Router-R1. ``--'' indicates results omitted or not available.}
+\caption{Main results on ScienceWorld and HLE test sets. Avg Score/Avg Turns are per-episode averages (ScienceWorld score in $[-100,100]$; HLE accuracy in \%), while Total Cost is summed over evaluated episodes. The $\Delta$ lines summarize \method's score gains and relative cost savings (percentage) compared to GPT-5 and Router-R1. $^{a}$RouterDC~\citep{chen2024routerdc}; $^{b}$EmbedLLM~\citep{wang2024embedllm}; $^{c}$AvengersPro (Avengers~\citep{lu2024avengers}). $^{\dagger}$OpenRouter~\citep{openrouter} uses a fixed provider-side routing API and does not allow customizing the candidate model pool, so its pool differs from ours. ``--'' indicates results omitted or not available.}
 \label{tab:main_results}
 \end{table*}

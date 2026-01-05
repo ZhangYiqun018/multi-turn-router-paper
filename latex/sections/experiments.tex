@@ -9,7 +9,7 @@ Unless otherwise stated, we repeat each experiment three times and report the me
 We evaluate on two diverse benchmarks with both in-distribution (ID) and out-of-distribution (OOD) splits.
 Because agentic systems are often deployed in open-ended settings, robustness to distribution shift is a primary concern; accordingly, we construct OOD evaluations that are \emph{semantically} disjoint from training and ID test (no overlap), rather than relying on random re-sampling.
 
-\textbf{ScienceWorld} \citep{wang2022scienceworld} is a text-based interactive environment requiring procedural scientific reasoning. Tasks include boiling water, growing plants, testing conductivity, and Mendelian genetics experiments. The environment provides a terminal score $S_{\text{final}} \in [0, 100]$ based on task completion. We use 13 task types for training/validation with a 60\%/20\%/20\% variation split, reserving 12 task types for out-of-distribution testing. Episodes are limited to 50 steps and \$2.0 cost.
+\textbf{ScienceWorld} \citep{wang2022scienceworld} is a text-based interactive environment requiring procedural scientific reasoning. Tasks include boiling water, growing plants, testing conductivity, and Mendelian genetics experiments. The environment provides a terminal score $S_{\text{final}} \in [-100, 100]$ based on task completion. We use 13 task types for training/validation with a 60\%/20\%/20\% variation split, reserving 12 task types for out-of-distribution testing. Episodes are limited to 50 steps and \$2.0 cost.
 
 \textbf{HLE (Humanity's Last Exam)} is a challenging long-context benchmark spanning academic domains. Questions require multi-step reasoning with tool use (web search, Python execution, file reading). Success is binary based on answer correctness. We use 6 subject categories (Math, Physics, Chemistry, Biology/Medicine, Engineering, Computer Science/AI) for training, with 2 categories (Humanities/Social Science, Other) held out for OOD evaluation.
 
@@ -35,7 +35,7 @@ To avoid ambiguity, throughout the paper ``Gemini-2.5-Flash-Lite'' refers to the
 We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64. History embeddings are precomputed using vLLM for efficiency. Training takes approximately 2 hours on a single A100 GPU.
 
 \paragraph{Baselines.}
-We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform random selection at each turn; (3) \textbf{Router-R1}: a turn-level multi-turn router where we train a \texttt{Qwen2.5-7B-Instruct} routing policy following the Router-R1 method; (4) \textbf{LLM Router}: a turn-level multi-turn router using the same routing prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing policy model (no training); (5) \textbf{OpenRouter}: a representative commercial multi-turn router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Single-turn routers (episode-level)}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{lu2024avengers}). For these single-turn routers, we route \emph{once} at the start of an episode based on the initial query context, then use the selected model for all subsequent turns. This design isolates the benefit of \emph{multi-turn} routing: if multi-turn adaptation matters, per-episode fixed selection should underperform routers that can switch models across turns. We emphasize that OpenRouter can route over a substantially larger candidate set than our fixed 6-model pool (Appendix~\ref{app:openrouter}), so it is advantaged in terms of available model options.
+We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform random selection at each turn; (3) \textbf{Router-R1}: a turn-level multi-turn router where we train a \texttt{Qwen2.5-7B-Instruct} routing model following the Router-R1 recipe; (4) \textbf{LLM Router}: a turn-level multi-turn router using the same routing prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing model (no training); (5) \textbf{OpenRouter}: a representative commercial router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Single-turn routers (episode-level)}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{lu2024avengers}). For these single-turn routers, we route \emph{once} at the start of an episode based on the initial query context, then use the selected model for all subsequent turns. This design isolates the benefit of \emph{multi-turn} routing: if multi-turn adaptation matters, per-episode fixed selection should underperform routers that can switch models across turns. We include OpenRouter to contextualize \method against a widely deployed, off-the-shelf commercial routing system; however, its routing API does not allow us to customize the candidate model pool, and it can select from a substantially larger pool than our fixed 6-model setting (Appendix~\ref{app:openrouter}), which advantages OpenRouter in available model options.
 
 \subsection{Main Results}
 \label{sec:main_results}
@@ -75,48 +75,21 @@ Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld tas
 Figure~\ref{fig:model_embeddings} visualizes the learned model embeddings after training.
 The encoder learns to distinguish the candidate models and organizes them by cost tier, suggesting it captures meaningful capability--cost structure beyond raw attributes.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
-\begin{tikzpicture}[scale=0.85]
-\begin{axis}[
-    ybar stacked,
-    bar width=12pt,
-    xlabel={Episode Phase},
-    ylabel={Model Usage (\%)},
-    symbolic x coords={Early (1-5), Mid (6-15), Late (16+)},
-    xtick=data,
-    ymin=0, ymax=100,
-    legend style={at={(0.5,-0.25)}, anchor=north, legend columns=3, font=\tiny},
-    enlarge x limits=0.25,
-    width=0.95\columnwidth,
-    height=5cm,
-]
-\addplot[fill=gpt5color!80] coordinates {(Early (1-5), 51.6) (Mid (6-15), 38.0) (Late (16+), 29.8)};
-\addplot[fill=gptosscolor!80] coordinates {(Early (1-5), 19.0) (Mid (6-15), 24.0) (Late (16+), 28.1)};
-\addplot[fill=geminicolor!80] coordinates {(Early (1-5), 10.0) (Mid (6-15), 14.0) (Late (16+), 15.8)};
-\addplot[fill=deepseekcolor!80] coordinates {(Early (1-5), 7.7) (Mid (6-15), 10.0) (Late (16+), 8.8)};
-\addplot[fill=kimicolor!80] coordinates {(Early (1-5), 6.3) (Mid (6-15), 8.0) (Late (16+), 10.5)};
-\addplot[fill=minimaxcolor!80] coordinates {(Early (1-5), 5.4) (Mid (6-15), 6.0) (Late (16+), 7.0)};
-\legend{GPT-5, GPT-OSS, Gemini, DeepSeek, Kimi, MiniMax}
-\end{axis}
-\end{tikzpicture}
-\caption{Model usage distribution across episode phases on ScienceWorld. The router prefers GPT-5 (expensive) for early planning and shifts to cheaper models in later phases.}
+\includegraphics[width=\columnwidth]{figures/model_usage_by_turn.pdf}
+\caption{Model usage by turn on ScienceWorld and HLE. The router adopts different turn-level selection strategies across benchmarks: ScienceWorld routing is relatively stable with GPT-5 dominating overall, while HLE uses more GPT-5 early and shifts toward cheaper models in later turns.}
 \label{fig:phase_usage}
 \end{figure}
 
 \paragraph{Phase-dependent model selection.}
-Figure~\ref{fig:phase_usage} shows model usage across episode phases. In early steps (1-5), the router heavily favors GPT-5 (51.6\%), which excels at initial planning. As episodes progress, usage shifts toward cheaper models: GPT-OSS increases from 19.0\% to 28.1\%, while GPT-5 decreases from 51.6\% to 29.8\%. This pattern reflects the insight that early decisions are more critical for task success.
+Figure~\ref{fig:phase_usage} shows model usage across turns, revealing distinct routing strategies across benchmarks. On ScienceWorld, routing is relatively stable: GPT-5 remains the dominant choice, with a mild mid-episode dip and higher usage at the beginning and end of episodes (to plan and to finish tasks). On HLE, the router relies more on GPT-5 in early turns but increasingly transitions to cheaper models (e.g., DeepSeek and MiniMax) in later turns. A plausible driver is that many HLE instances solvable by GPT-5 terminate within $\sim$10 turns, so the remaining long-horizon episodes benefit from cost-conscious switching once the heavy reasoning is done.
 
 \paragraph{Error-triggered model switching.}
 We analyze model switches triggered by errors (format errors, invalid actions). On ScienceWorld, 4.1\% of switches follow errors, with 100\% of error-to-premium switches leading to eventual success. On HLE, 49.0\% of switches are error-triggered, with format errors being most common (233 instances). The router learns to ``escalate'' to stronger models when errors occur.
 
-\input{tables/specialization}
-
-\paragraph{Task-specific model specialization.}
-Table~\ref{tab:specialization} reveals emergent specialization: Gemini-2.5-Flash-Lite is used 7$\times$ more for chemistry-mix tasks (perhaps benefiting from its large context), while GPT-5 dominates boiling tasks (3$\times$). GPT-OSS-120B specializes in identification tasks (lifespan, melt). This specialization emerges purely from learning, without explicit task-model assignments.
-
-\paragraph{Q-value dynamics during switching.}
-When the router switches models, Q-values consistently improve: the average Q-delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive Q-delta, indicating the router confidently believes switching improves expected outcomes.
+\paragraph{Value estimates during switching.}
+When the router switches models, its learned value estimates improve: the average value delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive value delta, suggesting the router can identify situations where switching is likely to improve outcomes.
 
 \subsection{Ablation Studies}
 

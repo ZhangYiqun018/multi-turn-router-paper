@@ -26,19 +26,19 @@ We present our framework for multi-turn model routing. We first formalize the pr
 % Center: Training Pipeline
 \node[encoder, right=1.5cm of traj] (hist_enc) {History\\Encoder $\phi$};
 \node[encoder, below=0.5cm of hist_enc] (model_enc) {Model\\Encoder $\psi$};
-\node[qnet, right=1.2cm of hist_enc, yshift=-0.4cm] (qnet) {Q-Network\\$\hat{s}, \hat{c}$};
+\node[qnet, right=1.2cm of hist_enc, yshift=-0.4cm] (qnet) {Value\\Predictor\\$\hat{s}, \hat{c}$};
 
 % Model Pool (right side)
-\node[model, right=1.2cm of qnet, yshift=0.8cm, fill=gpt5color!30] (m1) {GPT-5};
-\node[model, below=0.15cm of m1, fill=deepseekcolor!30] (m2) {DeepSeek};
-\node[model, below=0.15cm of m2, fill=minimaxcolor!30] (m3) {MiniMax};
-\node[model, below=0.15cm of m3, fill=kimicolor!30] (m4) {Kimi-K2};
-\node[model, below=0.15cm of m4, fill=geminicolor!30] (m5) {Gemini};
-\node[model, below=0.15cm of m5, fill=gptosscolor!30] (m6) {GPT-OSS};
+\node[model, right=1.2cm of qnet, yshift=0.8cm, fill=gpt5color!30] (m1) {Model 1};
+\node[model, below=0.15cm of m1, fill=deepseekcolor!30] (m2) {Model 2};
+\node[model, below=0.15cm of m2, fill=minimaxcolor!30] (m3) {Model 3};
+\node[model, below=0.15cm of m3, fill=kimicolor!30] (m4) {Model 4};
+\node[model, below=0.15cm of m4, fill=geminicolor!30] (m5) {Model 5};
+\node[model, below=0.15cm of m5, fill=gptosscolor!30] (m6) {Model 6};
 \node[above=0.2cm of m1, font=\footnotesize\bfseries] {Model Pool $\mathcal{A}$};
 
 % Selection arrow
-\node[right=0.2cm of qnet, yshift=-0.2cm] (select) {\footnotesize $\arg\max_a Q_\lambda$};
+\node[right=0.2cm of qnet, yshift=-0.2cm] (select) {\footnotesize select $a_t$};
 
 % Environment loop
 \node[env, right=1.0cm of m3] (env) {Environment\\(Action, Obs)};
@@ -58,22 +58,20 @@ We present our framework for multi-turn model routing. We first formalize the pr
 % Architecture details boxes
 \node[below=1.5cm of hist_enc, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (histdet) {
 \textbf{History Encoder}\\
-Qwen3-Embedding-0.6B\\
-Task + Last $K$ turns\\
-$\rightarrow z_x \in \mathbb{R}^{1024}$
+Task + recent turns\\
+$\rightarrow z_x$
 };
 
 \node[below=1.5cm of qnet, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (qdet) {
-\textbf{Q-Network}\\
-MLP: [256, 256]\\
+\textbf{Value Predictor}\\
 Dual heads: $\hat{s}, \hat{c}$\\
 $Q_\lambda = \hat{s} - \lambda \hat{c}$
 };
 
 \node[below=0.3cm of model_enc, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (moddet) {
 \textbf{Model Encoder}\\
-Attributes + Residual\\
-$\rightarrow z_a \in \mathbb{R}^{64}$
+Metadata + residual\\
+$\rightarrow z_a$
 };
 
 % Dashed lines to detail boxes
@@ -82,15 +80,15 @@ $\rightarrow z_a \in \mathbb{R}^{64}$
 \draw[dashed, gray] (model_enc) -- (moddet);
 
 \end{tikzpicture}
-\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a random router policy that uniformly samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head Q-network predicts expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
+\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a uniform (random) router that samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head value predictor estimates expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
 \label{fig:method_overview}
 \end{figure*}
 
-We model multi-turn agent interaction as an episodic Markov Decision Process. At each step $t$:
+We view a multi-turn agent episode as a sequence of turns indexed by $t$. At each turn:
 
 \begin{enumerate}
 \item The agent observes \textbf{history} $h_t$, comprising the task description, dialogue context, and the most recent environment observation.
-\item A \textbf{router} $\pi$ selects a model $a_t \in \mathcal{A} = \{1, \ldots, m\}$ from the pool.
+\item A \textbf{router} selects a model $a_t \in \mathcal{A}$ from the pool.
 \item The selected model generates output $y_t \sim p_{a_t}(\cdot | h_t)$.
 \item A \textbf{parser} extracts an environment action $u_t = \text{parse}(y_t)$.
 \item The \textbf{environment} returns the next observation $o_{t+1}$ and indicates termination.
@@ -101,10 +99,10 @@ The episode ends when the environment signals completion, a step limit is reache
 \paragraph{Objective.}
 We optimize a cost-adjusted objective with user-controllable trade-off:
 \begin{equation}
-J_\lambda(\pi) = \mathbb{E}_\pi\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
+J_\lambda = \mathbb{E}\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
 \label{eq:objective}
 \end{equation}
-where $c_t$ is the cost at step $t$ (computed from token usage and model pricing), and $\lambda \geq 0$ controls the cost penalty. This Lagrangian formulation exposes the Pareto frontier: at $\lambda=0$, we maximize performance regardless of cost; as $\lambda \to \infty$, we minimize cost.
+where $c_t$ is the cost at step $t$ (computed from token usage and model pricing), and $\lambda \geq 0$ controls the cost penalty. This Lagrangian formulation exposes the Pareto frontier: smaller $\lambda$ prioritizes performance, while larger $\lambda$ increasingly favors cheaper routing.
 
 \subsection{State and Model Representations}
 \label{sec:representations}
@@ -112,27 +110,21 @@ where $c_t$ is the cost at step $t$ (computed from token usage and model pricing
 Effective routing requires meaningful representations of both the current interaction state and the candidate models.
 
 \paragraph{History Encoding.}
-We encode the interaction history into a fixed-dimensional vector $z_x = \phi(h_t) \in \mathbb{R}^{1024}$ using a frozen text embedding model. Specifically, we use Qwen3-Embedding-0.6B \citep{qwen2024}, a decoder-only embedding model with 8K context support.
-
-The history is segmented with priority: (1) task description, (2) most recent $K$ conversation turns, (3) remaining context up to the token budget. We use last-token pooling to obtain the final embedding. This encoding captures the semantic state of the task, recent actions, and observations that inform routing decisions.
+We encode the interaction history into a fixed-dimensional vector $z_x=\phi(h_t)$ using a frozen text embedding model. The encoder summarizes the task description and recent observations/actions into a compact state representation for routing.
 
 \paragraph{Model Encoding.}
-Each candidate model $a \in \mathcal{A}$ is represented by a learned embedding $z_a = \psi(a) \in \mathbb{R}^{64}$ constructed from two components:
-
-\textbf{(1) Attribute features.} We extract five numerical attributes: maximum input tokens, maximum output tokens, input cost per million tokens, output cost per million tokens, and knowledge cutoff date. These are log-normalized and z-score standardized, then projected through an MLP to a 32-dimensional vector.
-
-\textbf{(2) Residual embeddings.} Each model has a learnable 16-dimensional embedding initialized to zero, capturing model-specific effects not explained by metadata (e.g., instruction-following quality, reasoning style).
+Each candidate model $a \in \mathcal{A}$ is represented by a learned embedding $z_a=\psi(a)$ that combines (i) structured metadata (e.g., context limits and pricing) with (ii) a learned residual that captures model-specific behavior not explained by metadata.
 
 The final model embedding concatenates these components through a linear projection:
 \begin{equation}
 z_a = W_{\text{proj}} \cdot [\text{MLP}(\text{attr}_a); e_a] + b_{\text{proj}}
 \end{equation}
-where $e_a$ is the residual embedding with L2 regularization ($\alpha = 10^{-4}$) to prevent overfitting.
+where $e_a$ is the residual embedding regularized to prevent overfitting.
 
 \subsection{Learning a Routing Value Function}
 \label{sec:learning}
 
-We learn a Q-function that predicts the expected cost-adjusted return for each state-model pair. Rather than training separate models for different $\lambda$ values, we decompose the prediction into score and cost components, enabling deployment-time adjustment.
+We learn a routing value function that predicts the expected cost-adjusted outcome for each state--model pair. Rather than training separate routers for different $\lambda$ values, we decompose the prediction into score and cost components, enabling deployment-time adjustment.
 
 \paragraph{Dual-Head Architecture.}
 Given history encoding $z_x$ and model encoding $z_a$, we predict:
@@ -140,15 +132,13 @@ Given history encoding $z_x$ and model encoding $z_a$, we predict:
 \hat{s}(h_t, a) &= f_{\theta_s}(z_x, z_a) \approx \mathbb{E}[S_{\text{final}} | h_t, a] \\
 \hat{c}(h_t, a) &= f_{\theta_c}(z_x, z_a) \approx \mathbb{E}[C_{t:\text{end}} | h_t, a]
 \end{align}
-where $C_{t:\text{end}} = \sum_{i=t}^{T-1} c_i$ is the remaining episode cost from step $t$. The Q-function is then:
+where $C_{t:\text{end}} = \sum_{i=t}^{T-1} c_i$ is the remaining episode cost from step $t$. The cost-adjusted value is then:
 \begin{equation}
 Q_\lambda(h_t, a) = \hat{s}(h_t, a) - \lambda \cdot \hat{c}(h_t, a)
 \end{equation}
 
-The neural network backbone is a 2-layer MLP with hidden dimensions [256, 256], ReLU activations, and 0.1 dropout. The input is the concatenation $[z_x; z_a] \in \mathbb{R}^{1088}$.
-
 \paragraph{Training Objective.}
-We train on offline trajectories collected under a stochastic policy. For each step $(h_t^{(k)}, a_t^{(k)})$ in trajectory $k$, the supervision targets are:
+We train on offline trajectories collected under a stochastic router. For each step $(h_t^{(k)}, a_t^{(k)})$ in trajectory $k$, the supervision targets are:
 \begin{align}
 y_s^{(k)} &= S_{\text{final}}^{(k)} \\
 y_c^{(k)} &= \sum_{i=t}^{T_k-1} c_i^{(k)}
@@ -158,12 +148,10 @@ The loss combines score and cost prediction:
 \begin{equation}
 \mathcal{L} = \sum_{k,t} \left[ (\hat{s} - y_s)^2 + w_c \cdot (\hat{c} - y_c)^2 \right]
 \end{equation}
-where $w_c$ is the cost loss weight (set to 0 in our experiments, as we found score prediction sufficient for effective routing).
+where $w_c$ controls the relative weighting of cost prediction.
 
 \paragraph{Data Collection.}
-We collect trajectories under a \textbf{random router policy} that uniformly samples from the model pool at each step: $\mu(a|h_t) = 1/|\mathcal{A}|$. This ensures coverage over the action space, which is critical for offline learning.
-
-For each task variation, we run 5 random-router episodes and 3 baseline episodes (single-model runs). The combined dataset contains 137K training samples across both benchmarks.
+We collect trajectories under a \textbf{uniform (random) router} that samples models from the pool at each step. This provides broad coverage of model choices, which is important for offline learning.
 
 \paragraph{Inference.}
 At deployment, the router selects models greedily:
@@ -172,18 +160,3 @@ a_t^* = \arg\max_{a \in \mathcal{A}} Q_\lambda(h_t, a)
 \end{equation}
 
 The $\lambda$ parameter can be adjusted at inference time without retraining, allowing users to navigate the cost-quality trade-off based on their budget constraints.
-
-\subsection{Baseline Routers}
-\label{sec:baselines}
-
-We compare against several baseline routing strategies:
-
-\textbf{Random Router.} Uniformly samples from the model pool at each step: $\pi(a|h_t) = 1/|\mathcal{A}|$. This matches the random-router collection policy used to gather offline trajectories.
-
-\textbf{Single-Turn Routers (episode-level).} We include three single-turn routing methods---RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{lu2024avengers})---as \emph{per-episode} routers: at the beginning of an episode, the router consumes the initial query context (history) and selects a model $a$ from the pool; the agent then uses the same model for all subsequent turns in the episode. This baseline is intentionally stronger than a fixed single-model choice (it can tailor the model to the query), but it cannot adapt to within-episode phase changes or error recovery, thereby highlighting the need for multi-turn routing.
-
-\textbf{Router-R1.} A turn-level multi-turn router baseline. At each turn, a routing policy model selects which model to invoke based on the recent history (last 3 turns) and model descriptions. Following the Router-R1 method, we train a \texttt{Qwen2.5-7B-Instruct} policy model for routing. We include the policy model cost when reporting total cost.
-
-\textbf{LLM Router.} A turn-level multi-turn router baseline that uses the same routing prompt/template as Router-R1, but directly uses \texttt{DeepSeek-V3.2} as the routing policy model (no training/fine-tuning).
-
-\textbf{OpenRouter.} A representative commercial routing solution \citep{openrouter} that uses OpenRouter's automatic routing API to select which model to invoke at each step. We treat the router as a black box and provide it with the same per-step history context used by other routing baselines. Notably, OpenRouter can route over a substantially larger candidate set than our fixed 6-model pool (Appendix~\ref{app:openrouter}), making this baseline strictly more powerful in terms of available model options.
