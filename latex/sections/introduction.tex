@@ -4,61 +4,12 @@ Large language model (LLM) agents are increasingly deployed to solve complex, mu
 
 \begin{figure}[t]
 \centering
-\begin{tikzpicture}[
-    node distance=0.4cm,
-    box/.style={rectangle, draw, rounded corners, minimum width=2.2cm, minimum height=0.6cm, font=\scriptsize},
-    expensive/.style={box, fill=gpt5color!30},
-    cheap/.style={box, fill=gptosscolor!30},
-    mid/.style={box, fill=deepseekcolor!30},
-    arrow/.style={->, >=stealth, thick},
-    label/.style={font=\tiny, align=center}
-]
-
-% Task
-\node[box, fill=yellow!20, minimum width=5.5cm] (task) {\textbf{Task:} Boil water in a kitchen environment};
-
-% Timeline
-\node[below=0.5cm of task, xshift=-2.2cm] (t1label) {\scriptsize Step 1};
-\node[right=0.8cm of t1label] (t2label) {\scriptsize Step 2-5};
-\node[right=0.5cm of t2label] (t3label) {\scriptsize Step 6};
-\node[right=0.5cm of t3label] (t4label) {\scriptsize Step 7-10};
-
-% Single model approach
-\node[below=0.3cm of t1label, expensive] (s1a) {GPT-5};
-\node[below=0.3cm of t2label, expensive] (s1b) {GPT-5};
-\node[below=0.3cm of t3label, expensive] (s1c) {GPT-5};
-\node[below=0.3cm of t4label, expensive] (s1d) {GPT-5};
-\node[left=0.1cm of s1a, label] {Single\\Model:};
-
-% Routed approach
-\node[below=0.4cm of s1a, expensive] (r1) {GPT-5};
-\node[below=0.4cm of s1b, cheap] (r2) {GPT-OSS};
-\node[below=0.4cm of s1c, expensive] (r3) {GPT-5};
-\node[below=0.4cm of s1d, cheap] (r4) {GPT-OSS};
-\node[left=0.1cm of r1, label] {Learned\\Router:};
-
-% Actions
-\node[below=0.15cm of r1, label, text=gray] {Plan task};
-\node[below=0.15cm of r2, label, text=gray] {Navigate};
-\node[below=0.15cm of r3, label, text=gray] {Fix error};
-\node[below=0.15cm of r4, label, text=gray] {Execute};
-
-% Cost comparison
-\node[below=1.2cm of r2, xshift=0.3cm] (cost) {
-\scriptsize
-\begin{tabular}{lcc}
-& \textbf{Cost} & \textbf{Success} \\
-Single (GPT-5) & \$0.19 & \checkmark \\
-\rowcolor{green!15} Learned Router & \$0.08 & \checkmark \\
-\end{tabular}
-};
-
-\end{tikzpicture}
-\caption{A toy example of multi-turn model routing. For a ScienceWorld task requiring 10 steps, a single-model approach uses GPT-5 (\$1.25/M tokens) throughout. \method uses GPT-5 for planning (Step 1) and error recovery (Step 6), switching to cheaper GPT-OSS (\$0.09/M tokens) for routine navigation and execution, achieving the same success with 58\% cost reduction.}
+\includegraphics[width=\columnwidth]{figures/toy-example.pdf}
+\caption{Toy example of multi-turn routing. \textbf{Top:} a single-turn (episode-level) router selects one model and keeps it fixed throughout the episode. \textbf{Middle:} a multi-turn router can adapt the model choice across turns based on the evolving interaction state. \textbf{Bottom:} \method achieves a better performance--cost trade-off than representative baselines on ScienceWorld (SW) and HLE.}
 \label{fig:toy_example}
 \end{figure}
 
-Consider the scenario in Figure~\ref{fig:toy_example}: an agent must boil water in ScienceWorld, a text-based science simulation. The task requires 10 interaction steps: planning what to do, navigating to the kitchen, finding a container, filling it with water, locating a heat source, and activating it. A single-model approach using GPT-5 succeeds but costs \$0.19 per episode. However, not all steps require frontier capabilities---navigation commands like ``go to kitchen'' are routine, while initial planning and error recovery benefit from stronger reasoning. Our \method learns this pattern from data: it selects GPT-5 for the critical first step and when errors occur, but routes to the 14$\times$ cheaper GPT-OSS for execution steps, achieving similar task outcomes at 58\% lower cost.
+Figure~\ref{fig:toy_example} illustrates why \emph{multi-turn} routing matters: single-turn routers commit to one model for the whole episode, while multi-turn routers can switch models as the episode progresses (e.g., using stronger models for exploration and cheaper models for routine tool use). In our setting, \method learns such turn-level selection from offline trajectories, improving performance while reducing total cost (e.g., +5.4 on ScienceWorld with 59\% lower cost than GPT-5, and +0.9 accuracy points on HLE with 43\% lower cost).
 
 This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
 
