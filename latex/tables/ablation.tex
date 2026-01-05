@@ -1,18 +1,20 @@
 \begin{table}[t]
 \centering
-\small
-\begin{tabular}{lc}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Variant} & \textbf{SW Score} \\
+\textbf{Variant} & \textbf{SW Avg Score} & \textbf{HLE Acc. (\%)} \\
 \midrule
-Full model & -- \\
+\textbf{Full model} & 53.8 & 26.0 \\
 \midrule
-w/o residual embeddings & -- \\
-w/o attribute features & -- \\
-Ridge instead of MLP & -- \\
-3-model pool only & -- \\
+w/o residual embeddings & -- & -- \\
+w/o attribute features & -- & -- \\
+Ridge instead of MLP & -- & -- \\
+3-model pool only & -- & -- \\
 \bottomrule
 \end{tabular}
-\caption{Ablation study on ScienceWorld test set.}
+\caption{Ablation study on ScienceWorld and HLE test sets. We report performance only (SW Avg Score, HLE Acc.) and leave remaining variants as placeholders pending final runs.}
 \label{tab:ablation}
 \end{table}

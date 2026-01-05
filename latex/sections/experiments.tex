@@ -88,6 +88,16 @@ Figure~\ref{fig:phase_usage} shows model usage across turns, revealing distinct 
 \paragraph{Error-triggered model switching.}
 We analyze model switches triggered by errors (format errors, invalid actions). On ScienceWorld, 4.1\% of switches follow errors, with 100\% of error-to-premium switches leading to eventual success. On HLE, 49.0\% of switches are error-triggered, with format errors being most common (233 instances). The router learns to ``escalate'' to stronger models when errors occur.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/cost_switches.pdf}
+\caption{Cost and switching behavior. \textit{(Placeholder; we will finalize the description.)}}
+\label{fig:cost_switches}
+\end{figure}
+
+\paragraph{Cost-aware switching.}
+\textit{Placeholder.}
+
 \paragraph{Value estimates during switching.}
 When the router switches models, its learned value estimates improve: the average value delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive value delta, suggesting the router can identify situations where switching is likely to improve outcomes.
 
@@ -95,4 +105,4 @@ When the router switches models, its learned value estimates improve: the averag
 
 \input{tables/ablation}
 
-Table~\ref{tab:ablation} reports ablations on ScienceWorld; results are omitted here pending final runs.
+Table~\ref{tab:ablation} summarizes ablations on ScienceWorld and HLE; remaining variants are pending final runs.
