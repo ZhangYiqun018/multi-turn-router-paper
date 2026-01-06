@@ -28,7 +28,8 @@ For ScienceWorld, we only penalize truly invalid actions (commands not recognize
 Environmental feedback such as ``the door is not open'' or ``the object is already in your inventory'' represents normal exploration and is not treated as an error.
 
 \paragraph{Severity Coefficients.}
-Severity levels map to penalty coefficients in AEC: high (1.0), medium (0.8), low (0.2).
+Severity levels map to penalty coefficients in AEC: high (2.0), medium (1.0), low (0.25).
+The warmup schedule uses $p_0{=}0.3$, $p_1{=}0.7$, $w_{\min}{=}0.3$, and $w_{\max}{=}1.0$.
 These coefficients modulate the base penalty $1/N$ where $N$ is the expected episode length for the task category.
 
 \input{tables/error_rules_detail}

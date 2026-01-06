@@ -1,39 +1,42 @@
-% Introduction with toy example
+LLM agents are increasingly deployed to solve complex, tool-using tasks---from software engineering \citep{jimenez2024swebench} to scientific reasoning \citep{wang2022scienceworld} and web navigation \citep{yao2022webshop}.
+These agentic workflows often require dozens of sequential model calls, so the total cost can quickly dominate.
+At the same time, the ``model zoo'' now spans orders of magnitude in price and capability, raising a natural question: \emph{can an agent adaptively use expensive models only when needed, while relying on cheaper models for routine turns?}
 
-Large language model (LLM) agents are increasingly deployed to solve complex, multi-step tasks---from software engineering \citep{jimenez2024swebench} to scientific reasoning \citep{wang2022scienceworld} and web navigation \citep{yao2022webshop}. These agentic workflows often require dozens of LLM calls, each incurring computational cost and latency. As the frontier of LLM capabilities expands, practitioners face a growing \emph{model zoo}: GPT-5 offers superior reasoning but costs \$1.25/M input tokens, while alternatives like Gemini-2.5-Flash-Lite provide 10$\times$ lower costs at reduced capability. This heterogeneity creates both an opportunity and a challenge: \textit{can we dynamically route between models during an episode to optimize the cost-quality trade-off?}
-
-\begin{figure}[!tbp]
+\begin{figure}[!htbp]
 \centering
 \includegraphics[width=\linewidth]{figures/toy-example.pdf}
-\caption{Toy example of multi-turn routing. \textbf{Top:} a single-turn (episode-level) router selects one model and keeps it fixed throughout the episode. \textbf{Middle:} a multi-turn router can adapt the model choice across turns based on the evolving interaction state. \textbf{Bottom:} \method achieves a better performance--cost trade-off than representative baselines on ScienceWorld (SW) and HLE.}
+\caption{\textbf{Top:} a single-turn (episode-level) router selects one model and keeps it fixed throughout the episode. \textbf{Middle:} a multi-turn router can adapt the model choice across turns based on the evolving interaction state. \textbf{Bottom:} \method achieves a better performance--cost trade-off than representative baselines on ScienceWorld (SW) and HLE.}
 \label{fig:toy_example}
 \end{figure}
 
-Figure~\ref{fig:toy_example} illustrates why \emph{multi-turn} routing matters: single-turn routers commit to one model for the whole episode, while multi-turn routers can switch models as the episode progresses (e.g., using stronger models for exploration and cheaper models for routine tool use). In our setting, \method learns such turn-level selection from offline trajectories, improving performance while reducing total cost (e.g., +5.4 on ScienceWorld with 59\% lower cost than GPT-5, and +0.9 accuracy points on HLE with 43\% lower cost).
+This question is especially acute in long-horizon, interactive evaluations.
+Many agent benchmarks allow dozens of steps or turns per episode (e.g., 100 steps in ScienceWorld) \citep{wang2022scienceworld}.
+To approximate peak capability, some evaluations also consider essentially unrestricted regimes (e.g., ``unlimited-turn'' coding baselines), where the goal is to maximize task success even at high test-time cost \citep{gao2025lessempiricalstudyturncontrol}.
+However, this practice can be prohibitively expensive: in multi-turn agent loops, the running context (trajectory, intermediate artifacts, tool outputs) is repeatedly carried forward, and total token consumption can grow superlinearly with the number of turns \citep{gao2025lessempiricalstudyturncontrol}.
+This cost pressure is further amplified by frontier long-context models that encourage keeping very large contexts ``in the loop'' during exploration, and by the fact that per-call API cost scales with input and output tokens.
+As a result, benchmarks often impose explicit step/cost caps or restricted evaluation protocols due to cost.
+These constraints make cost-aware methods increasingly important for reproducible research.
 
-This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
+Figure~\ref{fig:toy_example} highlights a key distinction.
+\emph{Single-turn} routers make one model choice at the start of an episode and keep it fixed.
+In contrast, we focus on \emph{multi-turn} routing, where the model choice can change across turns as the interaction evolves (e.g., stronger models for planning or recovery, cheaper models for routine tool use).
+In our setting, a \textbf{turn} is one router decision followed by one invocation of the selected model to produce the agent's next output.
 
-We formalize this as optimizing performance under a cost budget:
-\begin{equation}
-\max \; \mathbb{E}\left[S_{\text{final}}\right] \quad \text{s.t.} \quad \sum_{t=0}^{T-1} c_t \le B
-\end{equation}
-where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step API cost, and $B$ is a per-episode cost budget.
-This budgeted formulation reflects practical deployments where users must complete an episode within a fixed spend.
+We propose \method, which learns an \emph{outcome estimator} from logged trajectories.
+The estimator maps a history--model pair to an estimate of the eventual episode outcome (terminal score/accuracy), using an error-aware adjustment to provide a stable training signal from offline data.
+At inference time, the router selects the candidate model with the highest predicted outcome at each turn, and the episode is evaluated under fixed cost and turn limits.
 
-Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed feedback}: only terminal success/failure is observed, so early decisions are only judged much later; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
+Empirically, \method delivers consistent gains in both performance and cost.
+On ScienceWorld (test), it improves average score from 48.4 (GPT-5) to 53.8 while reducing total cost by 58.7\%; on HLE (test), it improves accuracy while reducing total cost by 43.4\%.
+It also generalizes under semantic distribution shift (OOD), maintaining improved outcomes with substantial cost savings (Table~\ref{tab:combined_results}).
+Beyond aggregate metrics, our analysis shows that multi-turn routing is not ``switch more'': \method reaches success with fewer model switches than Router-R1, is less reactive to transient errors, and exhibits structured model usage and emergent specialization across tools/actions (Figures~\ref{fig:cost_switches}--\ref{fig:action_by_model}).
 
-Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing. We collect trajectories under a uniform (random) router that samples models at each step, providing broad coverage over model choices. From these trajectories, we train a dual-head value model that estimates the expected terminal score and remaining cost for each state--model pair, enabling budget-aware routing decisions.
+Our key contributions are as follows:
 
-\paragraph{Contributions.} We make the following contributions:
-
-\begin{itemize}
-\item \textbf{Framework}: We introduce a modular multi-turn agent evaluation framework with an explicit routing layer, supporting pluggable routers, model pools, and benchmarks (\S\ref{sec:method}).
-
-\item \textbf{Method}: We propose \method, which learns a dual-head value model (predicting score and cost separately) from offline trajectories and performs budget-aware multi-turn routing under a fixed per-episode cost budget (\S\ref{sec:learning}).
-
-\item \textbf{Evaluation}: We evaluate on ScienceWorld (13 procedural tasks) and HLE (6 academic domains) with 6 frontier LLMs, comparing learned routing against strong single-model and commercial routing baselines (\S\ref{sec:experiments}).
-
-\item \textbf{Analysis}: We analyze learned routing patterns, finding that the router prefers expensive models for planning and error recovery.
+\begin{itemize}[nolistsep, noitemsep, leftmargin=*]
+\item We introduce \method, which learns an outcome estimator over history--model pairs from offline trajectories and performs turn-level routing in multi-turn agent episodes.
+\item We evaluate on ScienceWorld and HLE (test and OOD) with a fixed candidate pool, and show consistent improvements in both performance and total cost over strong routing baselines, including Router-R1 and a representative commercial router.
+\item We provide analyses that connect these gains to concrete routing behaviors, including fewer unnecessary switches, improved error recovery, and emergent specialization across tools/actions.
 \end{itemize}
 
-Our framework, trajectory dataset (137K samples), and trained models are publicly available to facilitate research on cost-aware agent evaluation.\footnote{Code and data will be released upon publication.}
+Code and data are available at \github.

@@ -2,27 +2,24 @@
 
 We evaluate \method on two challenging multi-turn benchmarks and analyze the learned routing patterns.
 Unless otherwise stated, we repeat each experiment three times and report the mean.
+Our anonymous code repository is available at \github.
 
 \subsection{Experimental Setup}
 
 \paragraph{Benchmarks.}
-We evaluate on two diverse benchmarks with both in-distribution (ID) and out-of-distribution (OOD) splits.
-Because agentic systems are often deployed in open-ended settings, robustness to distribution shift is a primary concern; accordingly, we construct OOD evaluations that are \emph{semantically} disjoint from training and ID test (no overlap), rather than relying on random re-sampling.
-
-\textbf{ScienceWorld} \citep{wang2022scienceworld} is a text-based interactive environment requiring procedural scientific reasoning. Tasks include boiling water, growing plants, testing conductivity, and Mendelian genetics experiments. The environment provides a terminal score $S_{\text{final}} \in [-100, 100]$ based on task completion. We use 13 task types for training/validation with a 60\%/20\%/20\% variation split, reserving 12 task types for out-of-distribution testing. Episodes are limited to 50 steps and \$2.0 cost.
-
-\textbf{HLE (Humanity's Last Exam)} is a challenging long-context benchmark spanning academic domains. Questions require multi-step reasoning with tool use (web search, Python execution, file reading). Success is binary based on answer correctness. We use 6 subject categories (Math, Physics, Chemistry, Biology/Medicine, Engineering, Computer Science/AI) for training, with 2 categories (Humanities/Social Science, Other) held out for OOD evaluation.
+We evaluate on two multi-turn benchmarks with both in-distribution (ID) and out-of-distribution (OOD) splits.
+We construct OOD evaluations to be \emph{semantically} disjoint from training and ID test (no overlap), rather than relying on random re-sampling, by holding out entire task types / subject categories as OOD.
+For ScienceWorld, we further split task \emph{variations} within the ID task types into 60\%/20\%/20\% train/validation/test (Appendix~\ref{app:data}); for HLE, we report ID vs.\ OOD performance by partitioning the benchmark's test questions into the chosen subject groups (Table~\ref{tab:hle_categories}).
+\textbf{ScienceWorld} \citep{wang2022scienceworld} is a text-based interactive environment requiring procedural scientific reasoning, with a terminal score $S_{\text{final}} \in [-100, 100]$.
+We use 13 ScienceWorld task types for ID and reserve 12 held-out task types for OOD; the full task-type split is listed in Table~\ref{tab:sw_tasks}.
+\textbf{HLE (Humanity's Last Exam)} is a long-context benchmark spanning academic domains, where questions require multi-step reasoning with tool use and success is binary.
+We use 6 subject categories for ID and hold out 2 categories for OOD; the detailed category split is listed in Table~\ref{tab:hle_categories}.
 
 \paragraph{Tool Configuration.}
-\textbf{HLE.} We enable four tools: \texttt{search}, \texttt{browse}, \texttt{python}, and \texttt{answer}.
-The \texttt{search} tool uses Serper's Google Search API to retrieve web results given a query.
-The \texttt{browse} tool fetches webpage content (via Jina Reader when enabled) and, to avoid context overflow from long pages, truncates the retrieved content and uses a separate summarization model to extract goal-relevant evidence (Appendix~\ref{app:prompts:browse}).
-We use \texttt{python} for deterministic computation and \texttt{answer} to submit the final response.
-Tool schemas are injected into the HLE system prompt at runtime and are listed explicitly in Appendix~\ref{app:tool_schemas}.
-
-\textbf{ScienceWorld.} ScienceWorld does not require external web tools.
-We interact with the environment through a single text-action interface: at each turn, the agent outputs exactly one command in a \texttt{```text} block and receives an observation from the simulator.
-The environment additionally provides built-in query commands (e.g., \texttt{?navigation}, \texttt{?object}) to enumerate valid actions without consuming a game turn, which we include as part of the default interaction protocol.
+For HLE, we follow the tool-use setting of TongYi-DeepResearch \citep{team2025tongyi} and enable four tools: \texttt{search}, \texttt{browse}, \texttt{python}, and \texttt{answer}.
+\texttt{search} uses Serper's Google Search API, while \texttt{browse} fetches webpage content (via Jina Reader when enabled) and optionally summarizes long pages to keep the context bounded (Appendix~\ref{app:prompts:browse}); \texttt{python} supports deterministic computation and \texttt{answer} submits the final response.
+ScienceWorld does not require external web tools; the agent interacts with the simulator via a single text-action command per turn, with built-in query commands (e.g., \texttt{?navigation}, \texttt{?object}) to enumerate valid actions.
+Tool schemas are injected into the HLE system prompt at runtime and are listed in Appendix~\ref{app:tool_schemas}.
 
 \paragraph{Error Detection.}
 We detect errors from environment observations to compute annealed error costs during training.
@@ -41,10 +38,20 @@ We evaluate with 6 frontier LLMs spanning a 100$\times$ cost range:
 To avoid ambiguity, throughout the paper ``Gemini-2.5-Flash-Lite'' refers to the specific model \texttt{google/gemini-2.5-flash-lite} (sometimes loosely called ``Gemini Flash'' in provider documentation).
 
 \paragraph{Training Details.}
-We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64. History embeddings are precomputed using vLLM for efficiency. Training takes approximately 2 hours on a single A100 GPU.
+We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64.
+We encode histories with a frozen \texttt{Qwen/Qwen3-Embedding-0.6B} encoder (1024-d embeddings) and precompute these embeddings using vLLM for efficiency.
+The model encoder maps an 8-d metadata feature vector to a 32-d attribute embedding, concatenates it with a 16-d per-model residual embedding, and linearly projects the resulting 48-d vector to a 64-d model embedding.
+For the error penalty in Eq.~\ref{eq:error}, we instantiate the progress weight $w(\cdot)$ as a piecewise-linear warmup with $p_0{=}0.3$, $p_1{=}0.7$, $w_{\min}{=}0.3$, and $w_{\max}{=}1.0$ (Appendix~\ref{app:error_rules}).
 
 \paragraph{Baselines.}
-We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform random selection at each turn; (3) \textbf{Router-R1}: a turn-level multi-turn router where we train a \texttt{Qwen2.5-7B-Instruct} routing model following the Router-R1 recipe; (4) \textbf{LLM Router}: a turn-level multi-turn router using the same routing prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing model (no training); (5) \textbf{OpenRouter}: a representative commercial router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Single-turn routers (episode-level)}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{zhang2025avengers}). For these single-turn routers, we route \emph{once} at the start of an episode based on the initial query context, then use the selected model for all subsequent turns. This design isolates the benefit of \emph{multi-turn} routing: if multi-turn adaptation matters, per-episode fixed selection should underperform routers that can switch models across turns. We include OpenRouter to contextualize \method against a widely deployed, off-the-shelf commercial routing system; however, its routing API does not allow us to customize the candidate model pool, and it can select from a substantially larger pool than our fixed 6-model setting (Appendix~\ref{app:openrouter}), which advantages OpenRouter in available model options.
+We compare against three groups of baselines:
+\begin{itemize}[nolistsep, noitemsep, leftmargin=*]
+\item \textbf{Single-model}: each candidate model from our pool is used exclusively for the entire episode.
+\item \textbf{Single-turn routers (episode-level)}: \textbf{RouterDC}~\citep{chen2024routerdc}, \textbf{EmbedLLM}~\citep{wang2024embedllm}, and \textbf{AvengersPro}~\citep{zhang2025avengers, zhang2025beyond}.
+These routers make a single routing decision at the start of an episode based on the initial query context, then keep the selected model fixed for all subsequent turns.
+\item \textbf{Multi-turn routers (turn-level)}: \textbf{Random Router} (uniform random selection at each turn), \textbf{Router-R1}~\citep{zhang2025router} (we train a \texttt{Qwen2.5-7B-Instruct} routing model following the Router-R1 recipe), \textbf{LLM Router} (same prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing model, no training), and \textbf{OpenRouter}~\citep{openrouter} (a representative commercial router via OpenRouter's automatic routing API).
+OpenRouter is included to contextualize \method against an off-the-shelf production routing system; however, its routing API does not allow us to customize the candidate pool, and it can select from a substantially larger pool than our fixed 6-model setting (Appendix~\ref{app:openrouter}).
+\end{itemize}
 
 \subsection{Results}
 \label{sec:main_results}
@@ -59,6 +66,8 @@ Notably, OpenRouter produces negative scores on ScienceWorld because it underest
 On HLE, \method attains the best accuracy (26.0\%) while remaining cost-efficient (43.4\% lower total cost than GPT-5 and 32.7\% lower than Router-R1); Router-R1 and LLM Router reach similar accuracy but at higher cost.
 Overall, \method delivers a better accuracy--cost trade-off than both strong single-model baselines and existing routing baselines on both benchmarks.
 
+\input{tables/ablation}
+
 \paragraph{OOD.}
 We next examine the OOD columns of Table~\ref{tab:combined_results}, which evaluate semantic distribution shift (held-out ScienceWorld task types; held-out HLE subject categories).
 On ScienceWorld OOD, \method improves over GPT-5 by +5.0 points while using 65.8\% lower total cost; on HLE OOD, it reaches 38.57\% accuracy with 52.3\% lower total cost than GPT-5.
@@ -66,14 +75,9 @@ These results show that \method not only generalizes under distribution shift bu
 
 \paragraph{Ablation Studies}
 
-\input{tables/ablation}
-
-Table~\ref{tab:ablation} reports ablations on ScienceWorld and HLE.
-Replacing the MLP with a Ridge regressor consistently degrades performance, suggesting that non-linear feature fusion is important for accurate routing decisions.
-Removing Random-Router trajectories from training also hurts, indicating that the mixed data improves coverage of failure modes and supports more robust routing.
-We additionally ablate removing the error-penalty adjustment in the outcome target to isolate the contribution of this training signal.
-Most notably, removing routing history (conditioning on only the current turn) causes a large drop on both benchmarks, confirming that effective multi-turn routing requires interaction context beyond the current step.
-Finally, replacing the learned model encoder with hardcoded features leads to the largest degradation, supporting the claim that \method benefits from learning a task-adaptive representation of candidate models.
+Table~\ref{tab:ablation} summarizes ablations on ScienceWorld and HLE.
+Performance degrades when we replace the MLP with a simpler regressor, remove random-router data, or remove the error-penalty adjustment, indicating that each component contributes to learning reliable routing preferences from offline trajectories.
+The largest drops come from removing routing history or replacing the learned model encoder with hardcoded features, highlighting the importance of modeling both the evolving interaction context and model-specific behavior.
 
 \subsection{Why Does \method Work?}
 \label{sec:analysis}

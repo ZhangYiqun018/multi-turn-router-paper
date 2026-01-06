@@ -80,6 +80,7 @@
 
 \newcommand{\method}{MTRouter\xspace}
 % \newcommand{\methodplus}{\textsc{VOLT+}}
+\newcommand{\github}{\url{https://anonymous.4open.science/r/multi-turn-model-routing-infra-BF0F}\xspace}
 
 \title{MTRouter: Cost-Aware Multi-Turn LLM Routing with History–Model Joint Embeddings}
 
@@ -88,13 +89,12 @@
 \begin{document}
 \maketitle
 	\begin{abstract}
-	Multi-turn LLM agents increasingly tackle complex tasks requiring dozens of interaction steps, making the cost-quality trade-off a first-class concern.
-	We introduce \method, a framework for \emph{multi-turn model routing} that dynamically selects which model from a heterogeneous pool to invoke at each step of an agent episode.
-	Our approach learns value predictions over state-model pairs from offline trajectories and routes models under a user-specified cost budget.
-	We evaluate on two challenging benchmarks---ScienceWorld (procedural reasoning) and HLE (long-context academic reasoning)---using a pool of six frontier LLMs spanning a 100$\times$ cost range.
-	Results show that learned multi-turn routing can achieve favorable cost--score trade-offs compared to strong single-model baselines, while exhibiting phase-dependent selection and error-triggered escalation.
-	Analysis reveals that the router learns meaningful patterns: preferring expensive models for initial planning and error recovery, while switching to cheaper alternatives for routine execution.
-	We release our framework, trajectory dataset, and trained models to facilitate research on cost-aware multi-turn agent evaluation.
+	Multi-turn LLM agents solve tasks through many sequential interactions, where the total cost of repeated model calls becomes a first-class concern.
+	We study \emph{multi-turn model routing}: selecting which model from a heterogeneous pool to invoke at each turn of an episode, conditioned on the evolving interaction history.
+	We introduce \method, which learns an \emph{outcome estimator} over history--model pairs from logged trajectories and uses it to make turn-level routing decisions under a fixed evaluation budget.
+	On ScienceWorld and HLE, \method consistently improves the performance--cost trade-off: on ScienceWorld (test) it outperforms GPT-5 while reducing total cost by 58.7\%, and on HLE (test) it improves accuracy while reducing total cost by 43.4\%; it also maintains strong gains under semantic distribution shift (OOD).
+	Beyond aggregate results, we analyze why multi-turn routing helps: compared to Router-R1, \method reaches success with fewer model switches and is less reactive to transient errors, and it exhibits structured, benchmark-specific model usage and emergent specialization across tools/actions.
+	Code and data are available at \github.
 	\end{abstract}
 
 \section{Introduction}

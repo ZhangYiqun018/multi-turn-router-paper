@@ -65,7 +65,7 @@ $\rightarrow z_x$
 \node[below=1.5cm of qnet, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (qdet) {
 \textbf{Outcome Estimator}\\
 Estimates $\hat{s}$\\
-Budget-aware routing
+Outcome-guided routing
 };
 
 \node[below=0.3cm of model_enc, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (moddet) {
@@ -80,7 +80,7 @@ $\rightarrow z_a$
 \draw[dashed, gray] (model_enc) -- (moddet);
 
 \end{tikzpicture}
-\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a uniform (random) router that samples models at each turn. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. An outcome estimator predicts the expected terminal score $\hat{s}$ for each history--model pair. \textbf{Right:} At inference, the router selects models under a per-episode cost budget using these estimates.}
+\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected from a mixture of (i) a uniform (random) router that samples models at each turn and (ii) single-model runs on training tasks. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. An outcome estimator predicts the expected terminal score $\hat{s}$ for each history--model pair. \textbf{Right:} At inference, the router selects the model with the highest predicted outcome at each turn, while the episode is evaluated under the same per-episode budget and turn limit.}
 \label{fig:method_overview}
 \end{figure*}
 
@@ -139,6 +139,7 @@ In our setting, episodes are executed under both a cost budget $B$ and a maximum
 For each turn in a logged trajectory, we form a turn-conditional target by adjusting the terminal score $S_{\text{final}}$ with a cumulative error penalty.
 Concretely, we detect errors (e.g., invalid actions and parsing/format violations) from the trajectory logs and penalize them by severity and turn progress:
 \begin{align}
+    \label{eq:error}
 \tilde{S}_t &= S_{\text{final}} - \sum_{i=t}^{T-1} \rho_i, \\
 \rho_i &= \mathbf{1}[\mathcal{E}_i\neq\emptyset]\cdot \beta_{\mathrm{sev}(\mathcal{E}_i)}\cdot w\!\left(\tfrac{i+1}{T_{\max}}\right),
 \end{align}
@@ -154,11 +155,14 @@ We train on offline trajectories collected under a stochastic router. For each s
 \end{equation}
 
 \paragraph{Data Collection.}
-We log each episode as a trajectory (a sequence of turn-level tuples) and collect trajectories under a \textbf{uniform (random) router} that samples models from the pool at each turn. This provides broad coverage of model choices, which is important for offline learning.
+We log each episode as a trajectory (a sequence of turn-level tuples) and collect training trajectories from two sources:
+(i) a \textbf{uniform (random) router} that samples models from the pool at each turn, and
+(ii) \textbf{single-model} runs where one candidate model is used for the entire episode on training tasks.
+The random-router data provides broad coverage of model choices, while the single-model data anchors the estimator with consistent per-model behavior.
 
 \paragraph{Inference.}
-At deployment, the router selects the model with the highest predicted adjusted outcome,
+At deployment, the router selects the model with the highest predicted outcome,
 \begin{equation}
 a_t^* = \arg\max_{a \in \mathcal{A}} \hat{s}_\theta(h_t, a),
 \end{equation}
-and the episode is executed under the per-episode budget $B$ and turn limit $T_{\max}$.
+and the episode is executed under the per-episode budget $B$ and turn limit $T_{\max}$ (terminating when either limit is reached).
