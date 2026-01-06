@@ -49,17 +49,18 @@ We compare against: (1) \textbf{Single-model baselines}: each model used exclusi
 \subsection{Results}
 \label{sec:main_results}
 
+\input{tables/combined_results}
+
 \paragraph{Test.}
-\input{tables/main_results}
-Table~\ref{tab:main_results} reports in-distribution test results.
+Table~\ref{tab:combined_results} reports both in-distribution (test) and out-of-distribution (OOD) results; we discuss the test columns here.
 On ScienceWorld, \method achieves the best average score (53.8) while cutting total cost by 58.7\% vs.\ GPT-5; compared to Router-R1, it gains +11.7 points with 54.4\% lower total cost.
 Episode-level routers (single-turn) that commit to one model per episode consistently lag behind, supporting the necessity of \emph{multi-turn} routing in interactive settings where phases and errors evolve over time.
+Notably, OpenRouter produces negative scores on ScienceWorld because it underestimates task difficulty and over-relies on lightweight models (Appendix~\ref{app:openrouter}).
 On HLE, \method attains the best accuracy (26.0\%) while remaining cost-efficient (43.4\% lower total cost than GPT-5 and 32.7\% lower than Router-R1); Router-R1 and LLM Router reach similar accuracy but at higher cost.
 Overall, \method delivers a better accuracy--cost trade-off than both strong single-model baselines and existing routing baselines on both benchmarks.
 
 \paragraph{OOD.}
-\input{tables/ood_results}
-Table~\ref{tab:ood_results} reports OOD performance under semantic distribution shift (held-out ScienceWorld task types; held-out HLE subject categories).
+We next examine the OOD columns of Table~\ref{tab:combined_results}, which evaluate semantic distribution shift (held-out ScienceWorld task types; held-out HLE subject categories).
 On ScienceWorld OOD, \method improves over GPT-5 by +5.0 points while using 65.8\% lower total cost; on HLE OOD, it reaches 38.57\% accuracy with 52.3\% lower total cost than GPT-5.
 These results show that \method not only generalizes under distribution shift but also preserves its budget efficiency, establishing the strongest overall performance among the compared methods.
 
@@ -70,12 +71,13 @@ These results show that \method not only generalizes under distribution shift bu
 Table~\ref{tab:ablation} reports ablations on ScienceWorld and HLE.
 Replacing the MLP with a Ridge regressor consistently degrades performance, suggesting that non-linear feature fusion is important for accurate routing decisions.
 Removing Random-Router trajectories from training also hurts, indicating that the mixed data improves coverage of failure modes and supports more robust routing.
+We additionally ablate removing the error-penalty adjustment in the outcome target to isolate the contribution of this training signal.
 Most notably, removing routing history (conditioning on only the current turn) causes a large drop on both benchmarks, confirming that effective multi-turn routing requires interaction context beyond the current step.
 Finally, replacing the learned model encoder with hardcoded features leads to the largest degradation, supporting the claim that \method benefits from learning a task-adaptive representation of candidate models.
 
 \subsection{Why Does \method Work?}
 \label{sec:analysis}
-While the in-domain and out-of-domain results (Tables~\ref{tab:main_results}--\ref{tab:ood_results}) and ablations (Table~\ref{tab:ablation}) establish \method's effectiveness, we next ask a more diagnostic question: \emph{why} does it work?
+While the in-domain and out-of-domain results (Table~\ref{tab:combined_results}) and ablations (Table~\ref{tab:ablation}) establish \method's effectiveness, we next ask a more diagnostic question: \emph{why} does it work?
 We use a sequence of complementary analyses to connect the performance gains to concrete routing behaviors.
 
 \paragraph{Start from a simple diagnostic: switching vs.\ cost.}
@@ -83,7 +85,7 @@ If multi-turn routing is ``just switch more often,'' then a router that switches
 We find the opposite.
 Figure~\ref{fig:cost_switches} plots, over \emph{successful} episodes, how cumulative API cost grows as the router makes additional model switches.
 Each curve is constructed by replaying logged trajectories from \method and Router-R1, accumulating per-turn cost and counting switches along the episode.
-Despite \method achieving better end performance (Tables~\ref{tab:main_results}--\ref{tab:ood_results}), its trajectories typically reach success with \emph{fewer} switches and \emph{lower} cumulative cost (e.g., on ScienceWorld: $\sim$5 switches for \method vs.\ $\sim$20 for Router-R1).
+Despite \method achieving better end performance (Table~\ref{tab:combined_results}), its trajectories typically reach success with \emph{fewer} switches and \emph{lower} cumulative cost (e.g., on ScienceWorld: $\sim$5 switches for \method vs.\ $\sim$20 for Router-R1).
 Beyond differences in per-token pricing, frequent switching can also reduce the effectiveness of prompt caching in multi-turn settings, lowering cache hit rates and increasing the effective cost of serving long histories \citep{hu2025hands}.
 This immediately raises a more specific question: \emph{when} does Router-R1 choose to switch, and are those switches actually helpful?
 

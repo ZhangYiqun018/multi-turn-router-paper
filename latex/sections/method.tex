@@ -148,11 +148,7 @@ This reflects a simple design intuition: early mistakes are often recoverable as
 We train $\hat{s}_\theta(h_t,a)$ to approximate $\mathbb{E}[\tilde{S}_t \mid h_t,a]$.
 
 \paragraph{Training Objective.}
-We train on offline trajectories collected under a stochastic router. For each step $(h_t^{(k)}, a_t^{(k)})$ in trajectory $k$, the supervision targets are:
-\begin{align}
-y^{(k)}_t &= \tilde{S}^{(k)}_t
-\end{align}
-
+We train on offline trajectories collected under a stochastic router. For each step $(h_t^{(k)}, a_t^{(k)})$ in trajectory $k$, we use the supervision target $y^{(k)}_t=\tilde{S}^{(k)}_t$ and minimize a squared error loss:
 \begin{equation}
 \mathcal{L} = \sum_{k,t} \left( \hat{s}_\theta(h_t^{(k)}, a_t^{(k)}) - y^{(k)}_t \right)^2
 \end{equation}

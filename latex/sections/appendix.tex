@@ -71,6 +71,23 @@ In our evaluation, the OpenRouter baseline routes over the following pool (as re
 Because OpenRouter can select from a superset of models (including multiple frontier and provider-specific options not present in our pool), it represents a stronger routing setting than ours.
 We still include it as a practical reference point, but comparisons should be interpreted with this mismatch in candidate pools in mind.
 
+\paragraph{Why does OpenRouter perform poorly on ScienceWorld?}
+Figure~\ref{fig:openrouter_model_usage} shows the model usage distribution of OpenRouter on both benchmarks.
+On ScienceWorld, OpenRouter predominantly selects lightweight models: Mistral-Nemo accounts for 68\% of all model calls, followed by GPT-5-nano (24\%) and Claude-4.5 (7\%).
+These models, while cost-efficient, lack the reasoning capability required for ScienceWorld's procedural scientific tasks.
+In contrast, on HLE, OpenRouter allocates 54\% of calls to Claude-4.5---a much stronger frontier model---along with Sonar (23\%) and Mistral-Nemo (15\%), reflecting a more appropriate difficulty assessment for that benchmark.
+
+This discrepancy reveals a key limitation of general-purpose commercial routers: without task-specific training, they may underestimate the difficulty of unfamiliar domains and over-rely on cheaper models.
+ScienceWorld's text-based interface and seemingly simple commands may mislead the router into treating it as an easy task, when in fact it requires multi-step planning and precise action sequencing that weaker models struggle to execute.
+The resulting negative scores ($-26.4$ on Test, $-26.9$ on OOD) indicate that the selected models frequently fail to make meaningful progress toward task completion, as judged by the environment's scoring function.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/openrouter_model_usage.pdf}
+\caption{Model usage distribution of OpenRouter on ScienceWorld and HLE. On ScienceWorld, OpenRouter predominantly selects lightweight models (Mistral-Nemo: 68\%, GPT-5-nano: 24\%), while on HLE it primarily uses stronger models (Claude-4.5: 54\%), reflecting different difficulty assessments.}
+\label{fig:openrouter_model_usage}
+\end{figure}
+
 \section{Reproducibility}
 \label{app:reproduce}
 
