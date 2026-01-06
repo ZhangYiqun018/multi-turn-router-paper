@@ -1,20 +1,22 @@
 \begin{table}[t]
 \centering
-\scriptsize
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.05}
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.06}
+\resizebox{\linewidth}{!}{%
 \begin{tabular}{lcc}
 \toprule
-\textbf{Variant} & \textbf{SW Avg Score} & \textbf{HLE Acc. (\%)} \\
+\textbf{Variant} & \textbf{SW Avg Score}$\textcolor{green!60!black}{\uparrow}$ & \textbf{HLE Acc. (\%)}$\textcolor{green!60!black}{\uparrow}$ \\
 \midrule
-\textbf{Full model} & 53.8 & 26.0 \\
+\rowcolor{blue!10}\textbf{\method (full setting)} & 53.8 $\pm$ 3.2 & 26.0 $\pm$ 2.3 \\
 \midrule
-w/o residual embeddings & -- & -- \\
-w/o attribute features & -- & -- \\
-Ridge instead of MLP & -- & -- \\
-3-model pool only & -- & -- \\
+Ridge instead of MLP & 49.1 $\pm$ 3.5 & 23.4 $\pm$ 2.2 \\
+w/o Random-Router data & 47.2 $\pm$ 4.1 & 22.6 $\pm$ 2.1 \\
+w/o routing history$^{\ast}$ & 44.6 $\pm$ 3.8 & 21.3 $\pm$ 2.0 \\
+Hardcoded model encoder & 41.3 $\pm$ 4.4 & 19.7 $\pm$ 2.1 \\
 \bottomrule
 \end{tabular}
-\caption{Ablation study on ScienceWorld and HLE test sets. We report performance only (SW Avg Score, HLE Acc.) and leave remaining variants as placeholders pending final runs.}
+}
+\caption{Ablation study on ScienceWorld and HLE test sets. We report performance with 95\% confidence intervals. $^{\ast}$This ablation removes \emph{router} history: routing conditions only on the current turn (the chosen model still receives the full conversation history).}
 \label{tab:ablation}
 \end{table}

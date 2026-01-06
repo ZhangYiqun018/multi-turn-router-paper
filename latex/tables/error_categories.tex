@@ -1,0 +1,18 @@
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{llc}
+\toprule
+\textbf{Benchmark} & \textbf{Error Category} & \textbf{\# Rules} \\
+\midrule
+\multirow{4}{*}{HLE} & Format Errors & 4 \\
+ & Python Execution Errors & 11 \\
+ & Search Tool Errors & 3 \\
+ & Browse Tool Errors & 5 \\
+\midrule
+ScienceWorld & Invalid Action & 1 \\
+\bottomrule
+\end{tabular}
+\caption{Error categories used for error detection and annealed error cost (AEC) computation. HLE has diverse tool-related errors, while ScienceWorld only penalizes unparseable actions. Full rule specifications are in Appendix~\ref{app:error_rules}.}
+\label{tab:error_categories}
+\end{table}

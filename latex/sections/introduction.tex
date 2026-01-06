@@ -2,9 +2,9 @@
 
 Large language model (LLM) agents are increasingly deployed to solve complex, multi-step tasks---from software engineering \citep{jimenez2024swebench} to scientific reasoning \citep{wang2022scienceworld} and web navigation \citep{yao2022webshop}. These agentic workflows often require dozens of LLM calls, each incurring computational cost and latency. As the frontier of LLM capabilities expands, practitioners face a growing \emph{model zoo}: GPT-5 offers superior reasoning but costs \$1.25/M input tokens, while alternatives like Gemini-2.5-Flash-Lite provide 10$\times$ lower costs at reduced capability. This heterogeneity creates both an opportunity and a challenge: \textit{can we dynamically route between models during an episode to optimize the cost-quality trade-off?}
 
-\begin{figure}[t]
+\begin{figure}[!tbp]
 \centering
-\includegraphics[width=\columnwidth]{figures/toy-example.pdf}
+\includegraphics[width=\linewidth]{figures/toy-example.pdf}
 \caption{Toy example of multi-turn routing. \textbf{Top:} a single-turn (episode-level) router selects one model and keeps it fixed throughout the episode. \textbf{Middle:} a multi-turn router can adapt the model choice across turns based on the evolving interaction state. \textbf{Bottom:} \method achieves a better performance--cost trade-off than representative baselines on ScienceWorld (SW) and HLE.}
 \label{fig:toy_example}
 \end{figure}
@@ -13,22 +13,23 @@ Figure~\ref{fig:toy_example} illustrates why \emph{multi-turn} routing matters: 
 
 This paper studies \textbf{multi-turn model routing}: at each step $t$ of an agent episode, a router selects which model $a_t$ from a pool $\mathcal{A}$ should generate the next action, conditioned on the interaction history $h_t$. Unlike single-turn routing \citep{ong2024routellm,lu2023routing}, our setting requires reasoning about \emph{sequential dependencies}---early decisions affect future states, and the router must learn which steps are critical for task success.
 
-We formalize this as optimizing a cost-adjusted objective:
+We formalize this as optimizing performance under a cost budget:
 \begin{equation}
-J_\lambda = \mathbb{E}\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
+\max \; \mathbb{E}\left[S_{\text{final}}\right] \quad \text{s.t.} \quad \sum_{t=0}^{T-1} c_t \le B
 \end{equation}
-where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step cost, and $\lambda \geq 0$ is a user-controllable penalty. This formulation exposes the cost-quality trade-off directly: smaller $\lambda$ prioritizes performance, while larger $\lambda$ increasingly favors cheaper models.
+where $S_{\text{final}}$ is the terminal task score, $c_t$ is the per-step API cost, and $B$ is a per-episode cost budget.
+This budgeted formulation reflects practical deployments where users must complete an episode within a fixed spend.
 
 Learning such a router faces several challenges: (1) \textbf{High-dimensional state}: the history includes natural language dialogue, tool outputs, and environment observations; (2) \textbf{Delayed feedback}: only terminal success/failure is observed, so early decisions are only judged much later; (3) \textbf{Counterfactual gap}: we cannot observe what would have happened had a different model been chosen at step $t$, as the trajectory diverges.
 
-Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing. We collect trajectories under a uniform (random) router that samples models at each step, providing broad coverage over model choices. From these trajectories, we train a value model $Q_\theta(h_t, a)$ that predicts the expected cost-adjusted outcome of selecting model $a$ given history $h_t$.
+Our key insight is that despite these challenges, \emph{offline trajectory data contains sufficient signal} to learn effective routing. We collect trajectories under a uniform (random) router that samples models at each step, providing broad coverage over model choices. From these trajectories, we train a dual-head value model that estimates the expected terminal score and remaining cost for each state--model pair, enabling budget-aware routing decisions.
 
 \paragraph{Contributions.} We make the following contributions:
 
 \begin{itemize}
 \item \textbf{Framework}: We introduce a modular multi-turn agent evaluation framework with an explicit routing layer, supporting pluggable routers, model pools, and benchmarks (\S\ref{sec:method}).
 
-\item \textbf{Method}: We propose \method, which learns a dual-head value model (predicting score and cost separately) from offline trajectories, enabling deployment-time $\lambda$ adjustment without retraining (\S\ref{sec:learning}).
+\item \textbf{Method}: We propose \method, which learns a dual-head value model (predicting score and cost separately) from offline trajectories and performs budget-aware multi-turn routing under a fixed per-episode cost budget (\S\ref{sec:learning}).
 
 \item \textbf{Evaluation}: We evaluate on ScienceWorld (13 procedural tasks) and HLE (6 academic domains) with 6 frontier LLMs, comparing learned routing against strong single-model and commercial routing baselines (\S\ref{sec:experiments}).
 

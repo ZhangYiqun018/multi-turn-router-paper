@@ -4,6 +4,6 @@ We presented \method, a framework for multi-turn model routing in LLM agent eval
 
 Our experiments on ScienceWorld and HLE highlight the promise of offline value learning for budget-controlled multi-turn routing. Analysis reveals that the router learns meaningful patterns such as phase-dependent selection and error-triggered escalation, emerging from data without explicit programming.
 
-The framework has immediate practical applications for cost-sensitive agent deployment. By adjusting the $\lambda$ parameter at inference time, practitioners can navigate the cost-quality Pareto frontier based on their budget constraints. The modular design allows integration with any multi-turn agent system and extension to new model pools and benchmarks.
+The framework has immediate practical applications for cost-sensitive agent deployment. Given a per-episode budget, practitioners can deploy \method to select models dynamically while keeping spend under control. The modular design allows integration with any multi-turn agent system and extension to new model pools and benchmarks.
 
 Future directions include: (1) online learning to adapt the router as new models become available; (2) incorporating latency and rate limits into the routing objective; (3) extending to multi-agent collaboration scenarios where different agents may require different model capabilities.

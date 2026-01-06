@@ -1,0 +1,49 @@
+\begin{table*}[!htbp]
+\centering
+\small
+\begin{tabular}{lllp{7cm}}
+\toprule
+\textbf{Category} & \textbf{Rule Name} & \textbf{Severity} & \textbf{Description} \\
+\midrule
+\multicolumn{4}{l}{\textit{\textbf{HLE Benchmark}}} \\
+\midrule
+\multirow{4}{*}{Format Errors}
+ & format\_error & medium & Tool call format error---model did not follow required format \\
+ & tool\_invalid\_args & medium & Invalid tool arguments or missing required parameters \\
+ & tool\_parse\_error & medium & Tool call parsing failure \\
+ & tool\_unknown & high & Model called a non-existent tool name \\
+\midrule
+\multirow{11}{*}{\shortstack[l]{Python\\Execution\\Errors}}
+ & python\_traceback & high & Python execution exception with traceback \\
+ & python\_name\_error & high & Undefined variable reference \\
+ & python\_syntax\_error & high & Python syntax error \\
+ & python\_indentation\_error & high & Python indentation error \\
+ & python\_type\_error & high & Type mismatch error \\
+ & python\_value\_error & medium & Invalid value error \\
+ & python\_index\_error & medium & Index out of bounds \\
+ & python\_key\_error & medium & Dictionary key not found \\
+ & python\_attribute\_error & medium & Attribute access error \\
+ & python\_import\_error & medium & Module import failure \\
+ & python\_zero\_division & medium & Division by zero \\
+ & python\_timeout & high & Code execution timeout \\
+\midrule
+\multirow{3}{*}{\shortstack[l]{Search Tool\\Errors}}
+ & search\_no\_results & high & Search returned no results \\
+ & search\_http\_error & low & HTTP connection error during search \\
+ & search\_rate\_limit & low & Search rate limit exceeded \\
+\midrule
+\multirow{5}{*}{\shortstack[l]{Browse Tool\\Errors}}
+ & browse\_403 & low & HTTP 403 Forbidden \\
+ & browse\_404 & low & HTTP 404 Not Found \\
+ & browse\_access\_denied & low & Access denied to resource \\
+ & browse\_paywall & low & Paywall or subscription block \\
+ & browse\_timeout & low & Browse request timeout \\
+\midrule
+\multicolumn{4}{l}{\textit{\textbf{ScienceWorld Benchmark}}} \\
+\midrule
+Invalid Action & no\_known\_action & high & Invalid action command not recognized by environment \\
+\bottomrule
+\end{tabular}
+\caption{Detailed error detection rules used for annealed error cost (AEC) computation. Severity levels determine penalty coefficients: high (1.0), medium (0.8), low (0.2). Browse tool errors are marked low severity as they reflect external failures rather than model errors.}
+\label{tab:error_rules_detail}
+\end{table*}

@@ -78,24 +78,24 @@
   showstringspaces=false
 }
 
-\newcommand{\method}{VOLT\xspace}
+\newcommand{\method}{MTRouter\xspace}
 % \newcommand{\methodplus}{\textsc{VOLT+}}
 
-\title{VOLT: Offline Value Learning for Budget-Controlled Multi-Turn LLM Routing}
+\title{MTRouter: Cost-Aware Multi-Turn LLM Routing with History–Model Joint Embeddings}
 
 \author{Anonymous Authors}
 
 \begin{document}
 \maketitle
-\begin{abstract}
-Multi-turn LLM agents increasingly tackle complex tasks requiring dozens of interaction steps, making the cost-quality trade-off a first-class concern.
-We introduce \method, a framework for \emph{multi-turn model routing} that dynamically selects which model from a heterogeneous pool to invoke at each step of an agent episode.
-Our approach learns a value function over state-model pairs from offline trajectories, enabling deployment-time tuning of the cost-performance trade-off via an adjustable penalty coefficient $\lambda$.
-We evaluate on two challenging benchmarks---ScienceWorld (procedural reasoning) and HLE (long-context academic reasoning)---using a pool of six frontier LLMs spanning a 100$\times$ cost range.
-Results show that learned multi-turn routing can achieve favorable cost--score trade-offs compared to strong single-model baselines, while exhibiting phase-dependent selection and error-triggered escalation.
-Analysis reveals that the router learns meaningful patterns: preferring expensive models for initial planning and error recovery, while switching to cheaper alternatives for routine execution.
-We release our framework, trajectory dataset, and trained models to facilitate research on cost-aware multi-turn agent evaluation.
-\end{abstract}
+	\begin{abstract}
+	Multi-turn LLM agents increasingly tackle complex tasks requiring dozens of interaction steps, making the cost-quality trade-off a first-class concern.
+	We introduce \method, a framework for \emph{multi-turn model routing} that dynamically selects which model from a heterogeneous pool to invoke at each step of an agent episode.
+	Our approach learns value predictions over state-model pairs from offline trajectories and routes models under a user-specified cost budget.
+	We evaluate on two challenging benchmarks---ScienceWorld (procedural reasoning) and HLE (long-context academic reasoning)---using a pool of six frontier LLMs spanning a 100$\times$ cost range.
+	Results show that learned multi-turn routing can achieve favorable cost--score trade-offs compared to strong single-model baselines, while exhibiting phase-dependent selection and error-triggered escalation.
+	Analysis reveals that the router learns meaningful patterns: preferring expensive models for initial planning and error recovery, while switching to cheaper alternatives for routine execution.
+	We release our framework, trajectory dataset, and trained models to facilitate research on cost-aware multi-turn agent evaluation.
+	\end{abstract}
 
 \section{Introduction}
 \input{sections/introduction}

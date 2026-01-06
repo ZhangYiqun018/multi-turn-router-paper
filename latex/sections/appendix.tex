@@ -15,22 +15,23 @@ For each task type, we sample up to 30 variations (to bound collection time). Va
 
 \input{tables/hle_categories}
 
-\section{Error Analysis}
-\label{app:errors}
+\section{Error Detection Rules}
+\label{app:error_rules}
 
-\subsection{Error Type Distribution}
+Table~\ref{tab:error_rules_detail} provides the full specification of error detection rules used to compute annealed error costs (AEC) during training.
+Each rule consists of pattern strings matched against environment observations, a severity level (high/medium/low), and a description.
 
-Table~\ref{tab:error_types} shows the distribution of errors across models on HLE.
+\paragraph{Design Principles.}
+For HLE, we distinguish between model errors (format violations, Python exceptions) and external failures (HTTP errors, paywalls).
+Model errors receive higher severity since they reflect controllable mistakes; external failures are marked low severity as they depend on third-party services.
+For ScienceWorld, we only penalize truly invalid actions (commands not recognized by the environment parser).
+Environmental feedback such as ``the door is not open'' or ``the object is already in your inventory'' represents normal exploration and is not treated as an error.
 
-\input{tables/error_types}
+\paragraph{Severity Coefficients.}
+Severity levels map to penalty coefficients in AEC: high (1.0), medium (0.8), low (0.2).
+These coefficients modulate the base penalty $1/N$ where $N$ is the expected episode length for the task category.
 
-Format errors dominate (88.5\%), indicating that models frequently fail to produce correctly formatted tool calls. This motivates the router's strategy of escalating to stronger models when format errors occur.
-
-\subsection{Error Rates by Model}
-
-\input{tables/model_errors}
-
-Interestingly, GPT-5's error rate (51.8\%) is higher than some cheaper models on HLE. This is because GPT-5 takes fewer steps (7.0 vs 26.0 for DeepSeek), so each step is more consequential. MiniMax-M2's high error rate (88.5\%) explains its poor standalone performance despite low cost.
+\input{tables/error_rules_detail}
 
 \section{Training Dynamics}
 \label{app:training}
@@ -38,6 +39,20 @@ Interestingly, GPT-5's error rate (51.8\%) is higher than some cheaper models on
 \input{tables/r2_scores}
 
 The value model achieves strong predictive performance, with score prediction $R^2$ ranging from 0.689 (Gemini) to 0.792 (GPT-5). Cost prediction is slightly lower, likely due to higher variance in remaining cost depending on success/failure paths.
+
+\section{Additional Experiments}
+\label{app:more_experiments}
+
+\paragraph{Learned model embeddings.}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/model_embeddings.png}
+\caption{t-SNE visualization of learned model embeddings from the model encoder. The embeddings separate models by identity and form a clear cost-tier structure, with low-cost models (e.g., GPT-OSS, Gemini) distinct from higher-cost frontier models (e.g., GPT-5).}
+\label{fig:model_embeddings}
+\end{figure}
+
+Figure~\ref{fig:model_embeddings} visualizes the learned model embeddings after training.
+The encoder learns to distinguish the candidate models and organizes them by cost tier, suggesting it captures meaningful capability--cost structure beyond raw attributes.
 
 \section{OpenRouter Baseline Details}
 \label{app:openrouter}
@@ -55,31 +70,6 @@ In our evaluation, the OpenRouter baseline routes over the following pool (as re
 \paragraph{Implications for comparison.}
 Because OpenRouter can select from a superset of models (including multiple frontier and provider-specific options not present in our pool), it represents a stronger routing setting than ours.
 We still include it as a practical reference point, but comparisons should be interpreted with this mismatch in candidate pools in mind.
-
-\section{Sankey Diagram: Error Recovery Flow}
-\label{app:sankey}
-
-Figure~\ref{fig:sankey_description} describes the error recovery flow visualization.
-
-\begin{figure}[h]
-\centering
-\fbox{\parbox{0.9\columnwidth}{
-\centering
-\textit{[Error Recovery Sankey Diagram]}\\[2mm]
-\small
-Flow from error-triggering model $\rightarrow$ recovery model $\rightarrow$ outcome:\\[1mm]
-\textbf{ScienceWorld:}\\
-- 16 error switches, 15 recover successfully (93.8\%)\\
-- GPT-OSS $\rightarrow$ GPT-5: 100\% recovery\\
-- MiniMax $\rightarrow$ GPT-5: 100\% recovery\\[2mm]
-\textbf{HLE:}\\
-- 250 error switches, 87 recover (34.8\%)\\
-- Format errors most common trigger (233)\\
-- Escalation to GPT-5 has 31.9\% accuracy
-}}
-\caption{Description of error recovery flow. On ScienceWorld, error escalation to premium models has near-perfect recovery; on HLE, recovery is more challenging due to task difficulty.}
-\label{fig:sankey_description}
-\end{figure}
 
 \section{Reproducibility}
 \label{app:reproduce}

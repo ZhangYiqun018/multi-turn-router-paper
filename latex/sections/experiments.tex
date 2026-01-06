@@ -24,6 +24,15 @@ Tool schemas are injected into the HLE system prompt at runtime and are listed e
 We interact with the environment through a single text-action interface: at each turn, the agent outputs exactly one command in a \texttt{```text} block and receives an observation from the simulator.
 The environment additionally provides built-in query commands (e.g., \texttt{?navigation}, \texttt{?object}) to enumerate valid actions without consuming a game turn, which we include as part of the default interaction protocol.
 
+\paragraph{Error Detection.}
+We detect errors from environment observations to compute annealed error costs during training.
+Table~\ref{tab:error_categories} summarizes the error categories by benchmark.
+HLE errors span format violations, Python execution failures, and tool-specific issues; ScienceWorld only penalizes unparseable actions (environmental feedback like ``door is not open'' is normal exploration, not an error).
+Severity levels (high/medium/low) determine penalty coefficients in the AEC computation.
+Full rule specifications are provided in Appendix~\ref{app:error_rules}.
+
+\input{tables/error_categories}
+
 \paragraph{Model Pool.}
 We evaluate with 6 frontier LLMs spanning a 100$\times$ cost range:
 
@@ -35,84 +44,93 @@ To avoid ambiguity, throughout the paper ``Gemini-2.5-Flash-Lite'' refers to the
 We train for 100 epochs with early stopping (patience=3) using AdamW optimizer (lr=$10^{-3}$, weight decay=0.01) and cosine annealing. Batch size is 64. History embeddings are precomputed using vLLM for efficiency. Training takes approximately 2 hours on a single A100 GPU.
 
 \paragraph{Baselines.}
-We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform random selection at each turn; (3) \textbf{Router-R1}: a turn-level multi-turn router where we train a \texttt{Qwen2.5-7B-Instruct} routing model following the Router-R1 recipe; (4) \textbf{LLM Router}: a turn-level multi-turn router using the same routing prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing model (no training); (5) \textbf{OpenRouter}: a representative commercial router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Single-turn routers (episode-level)}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{lu2024avengers}). For these single-turn routers, we route \emph{once} at the start of an episode based on the initial query context, then use the selected model for all subsequent turns. This design isolates the benefit of \emph{multi-turn} routing: if multi-turn adaptation matters, per-episode fixed selection should underperform routers that can switch models across turns. We include OpenRouter to contextualize \method against a widely deployed, off-the-shelf commercial routing system; however, its routing API does not allow us to customize the candidate model pool, and it can select from a substantially larger pool than our fixed 6-model setting (Appendix~\ref{app:openrouter}), which advantages OpenRouter in available model options.
+We compare against: (1) \textbf{Single-model baselines}: each model used exclusively; (2) \textbf{Random Router}: uniform random selection at each turn; (3) \textbf{Router-R1}: a turn-level multi-turn router where we train a \texttt{Qwen2.5-7B-Instruct} routing model following the Router-R1 recipe; (4) \textbf{LLM Router}: a turn-level multi-turn router using the same routing prompt as Router-R1 but directly using \texttt{DeepSeek-V3.2} as the routing model (no training); (5) \textbf{OpenRouter}: a representative commercial router \citep{openrouter} using OpenRouter's automatic routing API; (6) \textbf{Single-turn routers (episode-level)}: RouterDC \citep{chen2024routerdc}, EmbedLLM \citep{wang2024embedllm}, and AvengersPro (our implementation of Avengers \citep{zhang2025avengers}). For these single-turn routers, we route \emph{once} at the start of an episode based on the initial query context, then use the selected model for all subsequent turns. This design isolates the benefit of \emph{multi-turn} routing: if multi-turn adaptation matters, per-episode fixed selection should underperform routers that can switch models across turns. We include OpenRouter to contextualize \method against a widely deployed, off-the-shelf commercial routing system; however, its routing API does not allow us to customize the candidate model pool, and it can select from a substantially larger pool than our fixed 6-model setting (Appendix~\ref{app:openrouter}), which advantages OpenRouter in available model options.
 
-\subsection{Main Results}
+\subsection{Results}
 \label{sec:main_results}
 
+\paragraph{Test.}
 \input{tables/main_results}
+Table~\ref{tab:main_results} reports in-distribution test results.
+On ScienceWorld, \method achieves the best average score (53.8) while cutting total cost by 58.7\% vs.\ GPT-5; compared to Router-R1, it gains +11.7 points with 54.4\% lower total cost.
+Episode-level routers (single-turn) that commit to one model per episode consistently lag behind, supporting the necessity of \emph{multi-turn} routing in interactive settings where phases and errors evolve over time.
+On HLE, \method attains the best accuracy (26.0\%) while remaining cost-efficient (43.4\% lower total cost than GPT-5 and 32.7\% lower than Router-R1); Router-R1 and LLM Router reach similar accuracy but at higher cost.
+Overall, \method delivers a better accuracy--cost trade-off than both strong single-model baselines and existing routing baselines on both benchmarks.
 
-Table~\ref{tab:main_results} presents our main results. Key findings:
-
-\paragraph{Improving performance under budget.}
-On ScienceWorld, \method achieves the best score (53.8) while costing less than half of GPT-5 (\$5.74 vs \$13.91 total).
-On HLE, \method also achieves the strongest accuracy (26.0\%), outperforming GPT-5 (25.1\%) while reducing total cost (\$34.97 vs \$61.77).
-
-\paragraph{Multi-turn routing vs. episode-level selection.}
-Episode-level single-turn routers (RouterDC, EmbedLLM, AvengersPro) can adapt the \emph{initial} model choice to the query, but they cannot switch models across turns.
-In contrast, turn-level multi-turn routers can react to phase changes and recover from errors; \method consistently outperforms both episode-level routers and the Random Router baseline on ScienceWorld.
-
-\paragraph{Comparison to turn-level router baselines.}
-On HLE, Router-R1 (trained \texttt{Qwen2.5-7B-Instruct} router) and LLM Router (untrained \texttt{DeepSeek-V3.2} router) achieve comparable accuracies (24.2\% and 24.0\%), but both are more expensive than \method in total cost. OpenRouter achieves 18.3\% accuracy with substantially higher total cost.
-
-\subsection{Out-of-Distribution Generalization}
-
+\paragraph{OOD.}
 \input{tables/ood_results}
+Table~\ref{tab:ood_results} reports OOD performance under semantic distribution shift (held-out ScienceWorld task types; held-out HLE subject categories).
+On ScienceWorld OOD, \method improves over GPT-5 by +5.0 points while using 65.8\% lower total cost; on HLE OOD, it reaches 38.57\% accuracy with 52.3\% lower total cost than GPT-5.
+These results show that \method not only generalizes under distribution shift but also preserves its budget efficiency, establishing the strongest overall performance among the compared methods.
 
-Table~\ref{tab:ood_results} reports OOD performance on held-out ScienceWorld task types and held-out HLE categories. We include OpenRouter as a strong practical baseline that is advantaged by a larger candidate pool (Appendix~\ref{app:openrouter}). For readability, we report raw OOD metrics; an alternative presentation (common in robustness reporting) is to additionally include generalization gaps, e.g., $\Delta$Score = Score$_{\text{OOD}}$ $-$ Score$_{\text{ID}}$ and $\Delta$Acc = Acc$_{\text{OOD}}$ $-$ Acc$_{\text{ID}}$, to directly quantify degradation under distribution shift.
-
-\subsection{Analysis}
-\label{sec:analysis}
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\linewidth]{figures/model_embeddings.png}
-\caption{t-SNE visualization of learned model embeddings from the model encoder. The embeddings separate models by identity and form a clear cost-tier structure, with low-cost models (e.g., GPT-OSS, Gemini) distinct from higher-cost frontier models (e.g., GPT-5).}
-\label{fig:model_embeddings}
-\end{figure}
-
-\paragraph{Learned model embeddings.}
-Figure~\ref{fig:model_embeddings} visualizes the learned model embeddings after training.
-The encoder learns to distinguish the candidate models and organizes them by cost tier, suggesting it captures meaningful capability--cost structure beyond raw attributes.
-
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=\columnwidth]{figures/model_usage_by_turn.pdf}
-\caption{Model usage by turn on ScienceWorld and HLE. The router adopts different turn-level selection strategies across benchmarks: ScienceWorld routing is relatively stable with GPT-5 dominating overall, while HLE uses more GPT-5 early and shifts toward cheaper models in later turns.}
-\label{fig:phase_usage}
-\end{figure}
-
-\paragraph{Phase-dependent model selection.}
-Figure~\ref{fig:phase_usage} shows model usage across turns, revealing distinct routing strategies across benchmarks. On ScienceWorld, routing is relatively stable: GPT-5 remains the dominant choice, with a mild mid-episode dip and higher usage at the beginning and end of episodes (to plan and to finish tasks). On HLE, the router relies more on GPT-5 in early turns but increasingly transitions to cheaper models (e.g., DeepSeek and MiniMax) in later turns. A plausible driver is that many HLE instances solvable by GPT-5 terminate within $\sim$10 turns, so the remaining long-horizon episodes benefit from cost-conscious switching once the heavy reasoning is done.
-
-\paragraph{Error-triggered model switching.}
-We analyze model switches triggered by errors (format errors, invalid actions). On ScienceWorld, 4.1\% of switches follow errors, with 100\% of error-to-premium switches leading to eventual success. On HLE, 49.0\% of switches are error-triggered, with format errors being most common (233 instances). The router learns to ``escalate'' to stronger models when errors occur.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/error_switch_recovery.pdf}
-\caption{Error-triggered switching and recovery. \textit{(Placeholder; we will finalize the description.)}}
-\label{fig:error_switch_recovery}
-\end{figure}
-
-\paragraph{Error recovery patterns.}
-\textit{Placeholder.}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\columnwidth]{figures/cost_switches.pdf}
-\caption{Cost and switching behavior. \textit{(Placeholder; we will finalize the description.)}}
-\label{fig:cost_switches}
-\end{figure}
-
-\paragraph{Cost-aware switching.}
-\textit{Placeholder.}
-
-\paragraph{Value estimates during switching.}
-When the router switches models, its learned value estimates improve: the average value delta is +0.032 for error-triggered switches and +0.046 for non-error switches. Notably, 100\% of switches have positive value delta, suggesting the router can identify situations where switching is likely to improve outcomes.
-
-\subsection{Ablation Studies}
+\paragraph{Ablation Studies}
 
 \input{tables/ablation}
 
-Table~\ref{tab:ablation} summarizes ablations on ScienceWorld and HLE; remaining variants are pending final runs.
+Table~\ref{tab:ablation} reports ablations on ScienceWorld and HLE.
+Replacing the MLP with a Ridge regressor consistently degrades performance, suggesting that non-linear feature fusion is important for accurate routing decisions.
+Removing Random-Router trajectories from training also hurts, indicating that the mixed data improves coverage of failure modes and supports more robust routing.
+Most notably, removing routing history (conditioning on only the current turn) causes a large drop on both benchmarks, confirming that effective multi-turn routing requires interaction context beyond the current step.
+Finally, replacing the learned model encoder with hardcoded features leads to the largest degradation, supporting the claim that \method benefits from learning a task-adaptive representation of candidate models.
+
+\subsection{Why Does \method Work?}
+\label{sec:analysis}
+While the in-domain and out-of-domain results (Tables~\ref{tab:main_results}--\ref{tab:ood_results}) and ablations (Table~\ref{tab:ablation}) establish \method's effectiveness, we next ask a more diagnostic question: \emph{why} does it work?
+We use a sequence of complementary analyses to connect the performance gains to concrete routing behaviors.
+
+\paragraph{Start from a simple diagnostic: switching vs.\ cost.}
+If multi-turn routing is ``just switch more often,'' then a router that switches frequently should dominate.
+We find the opposite.
+Figure~\ref{fig:cost_switches} plots, over \emph{successful} episodes, how cumulative API cost grows as the router makes additional model switches.
+Each curve is constructed by replaying logged trajectories from \method and Router-R1, accumulating per-turn cost and counting switches along the episode.
+Despite \method achieving better end performance (Tables~\ref{tab:main_results}--\ref{tab:ood_results}), its trajectories typically reach success with \emph{fewer} switches and \emph{lower} cumulative cost (e.g., on ScienceWorld: $\sim$5 switches for \method vs.\ $\sim$20 for Router-R1).
+Beyond differences in per-token pricing, frequent switching can also reduce the effectiveness of prompt caching in multi-turn settings, lowering cache hit rates and increasing the effective cost of serving long histories \citep{hu2025hands}.
+This immediately raises a more specific question: \emph{when} does Router-R1 choose to switch, and are those switches actually helpful?
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/cost_switches.pdf}
+\caption{Cumulative cost vs.\ cumulative model switches over successful episodes, comparing \method against Router-R1 on ScienceWorld and HLE (constructed by replaying logged trajectories).}
+\label{fig:cost_switches}
+\end{figure}
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/error_switch_recovery_2x1.pdf}
+\caption{Error-triggered switching and recovery. Left: probability of switching models after an error (format errors / invalid actions). Right: probability that the next turn recovers (no error) conditioned on an error.}
+\label{fig:error_switch_recovery}
+\end{figure}
+
+\paragraph{Switching less by being more patient around errors.}
+Figure~\ref{fig:error_switch_recovery} shows that Router-R1 switches aggressively after errors, while \method is less reactive: it often keeps the current model and tries to continue.
+Crucially, this is not ``ignoring'' errors: the right panel shows a higher probability of recovery on the next turn under \method.
+Consistent with this, after an error \method stays with the same model $\approx$90.2\% of the time on ScienceWorld and $\approx$80.9\% on HLE, substantially higher than Router-R1 (38.3\% and 66.4\%, respectively).
+Together with Figure~\ref{fig:cost_switches}, these trends suggest that \method avoids a large fraction of error-triggered switches that appear low-yield (e.g., reacting to transient formatting or action mistakes), helping control cumulative cost without sacrificing performance.
+We hypothesize this gap stems from the learning signal: Router-R1 largely relies on a natural-language router prompt to infer when switching helps, whereas \method is trained directly on trajectory outcomes (terminal scores with annealed error penalties), providing more direct supervision for effective switching.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/model_usage_by_turn.pdf}
+\caption{Model usage by turn on ScienceWorld and HLE. \method exhibits structured, benchmark-specific routing behavior rather than uniformly switching models across turns.}
+\label{fig:phase_usage}
+\end{figure}
+
+\paragraph{Not ``never switch''---but switch with structure.}
+One might worry that the previous results simply reflect a conservative router that rarely changes models.
+Figure~\ref{fig:phase_usage} rules this out: \method uses multiple models throughout an episode, but in a stable, benchmark-specific way rather than as a reflex to errors.
+This suggests that the router is learning a \emph{strategy} (which models to rely on, and when), not just a generic ``upgrade on failure'' heuristic.
+For instance, on ScienceWorld, GPT-5 accounts for 50.8\% of early turns, while GPT-OSS increases to 24.3\% in the final turns; in contrast, Router-R1 largely concentrates on DeepSeek and Gemini at roughly $\sim$45\% each across phases, exhibiting much less structured diversity.
+
+\begin{figure*}[!htbp]
+\centering
+\includegraphics[width=\linewidth]{figures/action_by_model_combined.pdf}
+\caption{Tool/action specialization by model measured via \emph{lift} ($\mathrm{Lift}=\Pr(\text{model}\mid \text{tool})/\Pr(\text{model})$). Values $>1$ indicate a model is over-represented for a tool/action (specialization), while values $<1$ indicate under-use.}
+\label{fig:action_by_model}
+\end{figure*}
+
+\paragraph{A concrete form of strategy: emergent specialization.}
+To make this structure explicit, Figure~\ref{fig:action_by_model} measures \emph{lift}: how much a model is over-used for a tool/action relative to its overall frequency.
+We observe clear specialization patterns (lift $>1$) that align with complementary strengths---e.g., on HLE, DeepSeek is over-represented on \texttt{search} (lift 1.66), GPT-5 on \texttt{python} (1.51), and Kimi on \texttt{browse} (1.98).
+On ScienceWorld, we observe analogous specialization across action types, such as MiniMax on observation-heavy actions (1.62), Gemini on object interactions (1.58), and GPT-OSS on query commands (1.81).
+These findings connect back to the main results: \method wins not by switching more, but by switching \emph{selectively} and assigning stable roles to models over the course of an episode.
+Additional analysis of the model encoder (learned model embeddings) is provided in Appendix~\ref{app:more_experiments}.

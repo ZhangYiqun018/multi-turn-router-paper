@@ -26,7 +26,7 @@ We present our framework for multi-turn model routing. We first formalize the pr
 % Center: Training Pipeline
 \node[encoder, right=1.5cm of traj] (hist_enc) {History\\Encoder $\phi$};
 \node[encoder, below=0.5cm of hist_enc] (model_enc) {Model\\Encoder $\psi$};
-\node[qnet, right=1.2cm of hist_enc, yshift=-0.4cm] (qnet) {Value\\Predictor\\$\hat{s}, \hat{c}$};
+\node[qnet, right=1.2cm of hist_enc, yshift=-0.4cm] (qnet) {Outcome\\Estimator\\$\hat{s}$};
 
 % Model Pool (right side)
 \node[model, right=1.2cm of qnet, yshift=0.8cm, fill=gpt5color!30] (m1) {Model 1};
@@ -63,9 +63,9 @@ $\rightarrow z_x$
 };
 
 \node[below=1.5cm of qnet, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (qdet) {
-\textbf{Value Predictor}\\
-Dual heads: $\hat{s}, \hat{c}$\\
-$Q_\lambda = \hat{s} - \lambda \hat{c}$
+\textbf{Outcome Estimator}\\
+Estimates $\hat{s}$\\
+Budget-aware routing
 };
 
 \node[below=0.3cm of model_enc, draw, rounded corners, fill=white, font=\tiny, align=left, text width=2.8cm] (moddet) {
@@ -80,37 +80,36 @@ $\rightarrow z_a$
 \draw[dashed, gray] (model_enc) -- (moddet);
 
 \end{tikzpicture}
-\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a uniform (random) router that samples models at each step. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. A dual-head value predictor estimates expected score $\hat{s}$ and cost $\hat{c}$. \textbf{Right:} At inference, the router selects $a^* = \arg\max_a Q_\lambda(h_t, a)$ where $Q_\lambda = \hat{s} - \lambda\hat{c}$, allowing deployment-time trade-off control.}
+\caption{\textbf{Overview of \method.} \textbf{Left:} Offline trajectories are collected under a uniform (random) router that samples models at each turn. \textbf{Center:} The history encoder $\phi$ encodes the dialogue context into $z_x$; the model encoder $\psi$ maps each candidate to $z_a$. An outcome estimator predicts the expected terminal score $\hat{s}$ for each history--model pair. \textbf{Right:} At inference, the router selects models under a per-episode cost budget using these estimates.}
 \label{fig:method_overview}
 \end{figure*}
 
-We view a multi-turn agent episode as a sequence of turns indexed by $t$. At each turn:
+Single-turn (episode-level) routing makes one model choice at the start of an episode and keeps it fixed. We study \emph{multi-turn} model routing, where the model choice can change over time.
+An episode consists of turns indexed by $t$.
+At each turn, a router selects a model $a_t \in \mathcal{A}$ to generate the agent's next output (the router itself may be implemented by an LLM).
+A \textbf{turn} is one round of interaction that includes exactly one invocation of the selected model: given the \textbf{history} $h_t$ (task description, dialogue context, and the most recent observation), the selected model produces $y_t \sim p_{a_t}(\cdot \mid h_t)$, and a \textbf{parser} maps $y_t$ to an executable action $u_t=\text{parse}(y_t)$; executing $u_t$ yields the next observation $o_{t+1}$.
 
-\begin{enumerate}
-\item The agent observes \textbf{history} $h_t$, comprising the task description, dialogue context, and the most recent environment observation.
-\item A \textbf{router} selects a model $a_t \in \mathcal{A}$ from the pool.
-\item The selected model generates output $y_t \sim p_{a_t}(\cdot | h_t)$.
-\item A \textbf{parser} extracts an environment action $u_t = \text{parse}(y_t)$.
-\item The \textbf{environment} returns the next observation $o_{t+1}$ and indicates termination.
-\end{enumerate}
-
-The episode ends when the environment signals completion, a step limit is reached, or a cost budget is exhausted. The environment provides a terminal score $S_{\text{final}}$ (e.g., task completion percentage in ScienceWorld, or binary success in HLE).
+The episode ends when the task is completed (as indicated by the environment or by an agent submission), a turn limit is reached, or a cost budget is exhausted. The environment provides a terminal score $S_{\text{final}}$.
 
 \paragraph{Objective.}
-We optimize a cost-adjusted objective with user-controllable trade-off:
+We optimize task performance under a per-episode cost budget:
 \begin{equation}
-J_\lambda = \mathbb{E}\left[S_{\text{final}} - \lambda \sum_{t=0}^{T-1} c_t\right]
+\max \; \mathbb{E}\left[S_{\text{final}}\right] \quad \text{s.t.} \quad \sum_{t=0}^{T-1} c_t \le B
 \label{eq:objective}
 \end{equation}
-where $c_t$ is the cost at step $t$ (computed from token usage and model pricing), and $\lambda \geq 0$ controls the cost penalty. This Lagrangian formulation exposes the Pareto frontier: smaller $\lambda$ prioritizes performance, while larger $\lambda$ increasingly favors cheaper routing.
+where $c_t$ is the cost at turn $t$ (computed from token usage and model pricing), $B$ is a per-episode cost budget, and $T\le T_{\max}$ is the episode length (capped by a maximum turn limit). Episodes terminate when the budget is exhausted or the turn limit is reached.
 
-\subsection{State and Model Representations}
+\subsection{Joint History--Model Representations}
 \label{sec:representations}
 
-Effective routing requires meaningful representations of both the current interaction state and the candidate models.
+Routing decisions depend on both the interaction history and the chosen model (i.e., the pair $(h_t,a_t)$). We therefore embed history and candidate models separately and then combine them into a joint representation used by the router.
 
 \paragraph{History Encoding.}
-We encode the interaction history into a fixed-dimensional vector $z_x=\phi(h_t)$ using a frozen text embedding model. The encoder summarizes the task description and recent observations/actions into a compact state representation for routing.
+We represent history as a sequence consisting of the task query $q$ and the most recent interaction turns, e.g.,
+\begin{equation}
+{\textstyle h_t = [q,\langle u_0,o_1\rangle,\ldots,\langle u_{t-1},o_t\rangle]}
+\end{equation}
+which we serialize into text with a fixed template and a token budget that truncates older turns first (while retaining the last $K$ turns). We then encode the serialized history with a frozen text encoder $\phi$ to obtain $z_x=\phi(h_t)\in\mathbb{R}^d$.
 
 \paragraph{Model Encoding.}
 Each candidate model $a \in \mathcal{A}$ is represented by a learned embedding $z_a=\psi(a)$ that combines (i) structured metadata (e.g., context limits and pricing) with (ii) a learned residual that captures model-specific behavior not explained by metadata.
@@ -121,42 +120,45 @@ z_a = W_{\text{proj}} \cdot [\text{MLP}(\text{attr}_a); e_a] + b_{\text{proj}}
 \end{equation}
 where $e_a$ is the residual embedding regularized to prevent overfitting.
 
-\subsection{Learning a Routing Value Function}
+\paragraph{Joint representation.}
+We form a joint feature vector by concatenating the two embeddings, $[z_x;z_a]$, and feed it to a shared feed-forward backbone to enable model-conditioned predictions.
+To score multiple candidates efficiently, we compute $z_x$ once for the current history and concatenate it with each candidate embedding in a batch.
+
+\subsection{Learning an Outcome Estimator}
 \label{sec:learning}
 
-We learn a routing value function that predicts the expected cost-adjusted outcome for each state--model pair. Rather than training separate routers for different $\lambda$ values, we decompose the prediction into score and cost components, enabling deployment-time adjustment.
+We learn an outcome estimator $\hat{s}_\theta(h_t,a)$ that maps a history--model pair $(h_t,a)$ to the expected terminal outcome when selecting model $a$ at turn $t$.
+We supervise this estimator with terminal outcomes, rather than dense per-turn rewards, for two reasons: (i) in complex agent environments, faithful intermediate rewards are often unavailable, and (ii) training a stable reward model for dense feedback can be brittle.
+In our setting, episodes are executed under both a cost budget $B$ and a maximum turn limit $T_{\max}$, so expensive choices and wasted turns (e.g., errors that trigger retries) are already reflected in the logged terminal scores; we therefore avoid adding a separate cost penalty to the target.
 
-\paragraph{Dual-Head Architecture.}
-Given history encoding $z_x$ and model encoding $z_a$, we predict:
+\paragraph{Outcome target with error penalties.}
+For each turn in a logged trajectory, we form a turn-conditional target by adjusting the terminal score $S_{\text{final}}$ with a cumulative error penalty.
+Concretely, we detect errors (e.g., invalid actions and parsing/format violations) from the trajectory logs and penalize them by severity and turn progress:
 \begin{align}
-\hat{s}(h_t, a) &= f_{\theta_s}(z_x, z_a) \approx \mathbb{E}[S_{\text{final}} | h_t, a] \\
-\hat{c}(h_t, a) &= f_{\theta_c}(z_x, z_a) \approx \mathbb{E}[C_{t:\text{end}} | h_t, a]
+\tilde{S}_t &= S_{\text{final}} - \sum_{i=t}^{T-1} \rho_i, \\
+\rho_i &= \mathbf{1}[\mathcal{E}_i\neq\emptyset]\cdot \beta_{\mathrm{sev}(\mathcal{E}_i)}\cdot w\!\left(\tfrac{i+1}{T_{\max}}\right),
 \end{align}
-where $C_{t:\text{end}} = \sum_{i=t}^{T-1} c_i$ is the remaining episode cost from step $t$. The cost-adjusted value is then:
-\begin{equation}
-Q_\lambda(h_t, a) = \hat{s}(h_t, a) - \lambda \cdot \hat{c}(h_t, a)
-\end{equation}
+where $\mathcal{E}_i$ is the set of detected error types at turn $i$, $\mathrm{sev}(\mathcal{E}_i)$ takes the maximum severity among errors at that turn, and $\beta$ is the corresponding severity coefficient.
+The progress weight $w(\cdot)$ is monotone increasing (we use a simple piecewise-linear schedule), so late errors are penalized more strongly.
+This reflects a simple design intuition: early mistakes are often recoverable as the agent is still gathering information, whereas late mistakes more directly jeopardize task completion, so we impose lower tolerance for errors near the end of an episode.
+We train $\hat{s}_\theta(h_t,a)$ to approximate $\mathbb{E}[\tilde{S}_t \mid h_t,a]$.
 
 \paragraph{Training Objective.}
 We train on offline trajectories collected under a stochastic router. For each step $(h_t^{(k)}, a_t^{(k)})$ in trajectory $k$, the supervision targets are:
 \begin{align}
-y_s^{(k)} &= S_{\text{final}}^{(k)} \\
-y_c^{(k)} &= \sum_{i=t}^{T_k-1} c_i^{(k)}
+y^{(k)}_t &= \tilde{S}^{(k)}_t
 \end{align}
 
-The loss combines score and cost prediction:
 \begin{equation}
-\mathcal{L} = \sum_{k,t} \left[ (\hat{s} - y_s)^2 + w_c \cdot (\hat{c} - y_c)^2 \right]
+\mathcal{L} = \sum_{k,t} \left( \hat{s}_\theta(h_t^{(k)}, a_t^{(k)}) - y^{(k)}_t \right)^2
 \end{equation}
-where $w_c$ controls the relative weighting of cost prediction.
 
 \paragraph{Data Collection.}
-We collect trajectories under a \textbf{uniform (random) router} that samples models from the pool at each step. This provides broad coverage of model choices, which is important for offline learning.
+We log each episode as a trajectory (a sequence of turn-level tuples) and collect trajectories under a \textbf{uniform (random) router} that samples models from the pool at each turn. This provides broad coverage of model choices, which is important for offline learning.
 
 \paragraph{Inference.}
-At deployment, the router selects models greedily:
+At deployment, the router selects the model with the highest predicted adjusted outcome,
 \begin{equation}
-a_t^* = \arg\max_{a \in \mathcal{A}} Q_\lambda(h_t, a)
+a_t^* = \arg\max_{a \in \mathcal{A}} \hat{s}_\theta(h_t, a),
 \end{equation}
-
-The $\lambda$ parameter can be adjusted at inference time without retraining, allowing users to navigate the cost-quality trade-off based on their budget constraints.
+and the episode is executed under the per-episode budget $B$ and turn limit $T_{\max}$.
