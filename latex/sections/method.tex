@@ -128,6 +128,10 @@ To score multiple candidates efficiently, we compute $z_x$ once for the current 
 \label{sec:learning}
 
 We learn an outcome estimator $\hat{s}_\theta(h_t,a)$ that maps a history--model pair $(h_t,a)$ to the expected terminal outcome when selecting model $a$ at turn $t$.
+We parameterize $\hat{s}_\theta$ as a lightweight feed-forward network (an MLP with ReLU nonlinearities and optional dropout) that takes the joint representation $[z_x;z_a]$ and outputs a single scalar:
+\begin{equation}
+\hat{s}_\theta(h_t,a)=f_\theta([z_x;z_a])\in\mathbb{R}.
+\end{equation}
 We supervise this estimator with terminal outcomes, rather than dense per-turn rewards, for two reasons: (i) in complex agent environments, faithful intermediate rewards are often unavailable, and (ii) training a stable reward model for dense feedback can be brittle.
 In our setting, episodes are executed under both a cost budget $B$ and a maximum turn limit $T_{\max}$, so expensive choices and wasted turns (e.g., errors that trigger retries) are already reflected in the logged terminal scores; we therefore avoid adding a separate cost penalty to the target.
 
